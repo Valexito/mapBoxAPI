@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/services/geolocator.dart';
+import 'package:mapbox_api/services/parking_service.dart';
+import 'package:mapbox_api/models/parking.dart';
 
 const MAP_BOX_ACCESS_TOKEN =
     'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
@@ -15,6 +17,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   LatLng? currentPosition;
+  List<Marker> _parkingMarkers = [];
 
   @override
   void initState() {
@@ -28,12 +31,49 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         currentPosition = location;
       });
+      _loadParkingMarkers();
     } catch (e) {
       debugPrint('Error obteniendo ubicación: $e');
       setState(() {
-        currentPosition = LatLng(14.834999, -91.518669); // fallback a Xela
+        currentPosition = LatLng(14.834999, -91.518669); // fallback
       });
+      _loadParkingMarkers();
     }
+  }
+
+  Future<void> _loadParkingMarkers() async {
+    final parkingService = ParkingService();
+    final parkings = await parkingService.getAllParkings();
+
+    final markers =
+        parkings.map((parking) {
+          return Marker(
+            point: LatLng(parking.lat, parking.lng),
+            width: 100,
+            height: 80,
+            child: Column(
+              children: [
+                const Icon(Icons.local_parking, color: Colors.red, size: 35),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${parking.name}\nQ${parking.price} - ${parking.spaces} esp.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList();
+
+    setState(() {
+      _parkingMarkers = markers;
+    });
   }
 
   @override
@@ -44,7 +84,7 @@ class _MapScreenState extends State<MapScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tu ubicación'),
+        title: const Text('Parqueos Cercanos'),
         backgroundColor: Colors.blueAccent,
       ),
       body: FlutterMap(
@@ -61,6 +101,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
           MarkerLayer(
             markers: [
+              // Tu ubicación
               Marker(
                 point: currentPosition!,
                 width: 40,
@@ -71,6 +112,8 @@ class _MapScreenState extends State<MapScreen> {
                   size: 40,
                 ),
               ),
+              // Marcadores de Firestore
+              ..._parkingMarkers,
             ],
           ),
         ],
