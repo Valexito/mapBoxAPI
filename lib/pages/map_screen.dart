@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/services/geolocator.dart';
 import 'package:mapbox_api/services/parking_service.dart';
 import 'package:mapbox_api/models/parking.dart';
+import 'package:mapbox_api/widgets/parking_detail_bottom.dart';
 
 const MAP_BOX_ACCESS_TOKEN =
     'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
@@ -35,7 +36,7 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) {
       debugPrint('Error obteniendo ubicación: $e');
       setState(() {
-        currentPosition = LatLng(14.834999, -91.518669); // fallback
+        currentPosition = LatLng(14.834999, -91.518669); // fallback en Xela
       });
       _loadParkingMarkers();
     }
@@ -51,22 +52,33 @@ class _MapScreenState extends State<MapScreen> {
             point: LatLng(parking.lat, parking.lng),
             width: 100,
             height: 80,
-            child: Column(
-              children: [
-                const Icon(Icons.local_parking, color: Colors.red, size: 35),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(4),
+            child: GestureDetector(
+              onTap: () => _showParkingDetails(parking),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.directions_car_filled,
+                    color: Colors.blue,
+                    size: 30,
                   ),
-                  child: Text(
-                    '${parking.name}\nQ${parking.price} - ${parking.spaces} esp.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  Container(
+                    margin: const EdgeInsets.only(top: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      parking.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 9, color: Colors.white),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         }).toList();
@@ -74,6 +86,16 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _parkingMarkers = markers;
     });
+  }
+
+  void _showParkingDetails(Parking parking) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => ParkingDetailBottomSheet(parking: parking),
+    );
   }
 
   @override
