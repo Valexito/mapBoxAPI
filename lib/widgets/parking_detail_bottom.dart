@@ -29,7 +29,7 @@ class ParkingDetailBottomSheet extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ReserveSpacePage(parkingName: parking.name),
+                  builder: (_) => ReserveSpacePage(parking: parking),
                 ),
               );
             },

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mapbox_api/models/parking.dart';
+import '../widgets/post_reservation_dialog.dart';
+import 'package:latlong2/latlong.dart';
 
 class ReserveSpacePage extends StatefulWidget {
-  final String parkingName; // Puedes pasar el nombre o ID si lo necesitas
+  final Parking parking; // Puedes pasar el nombre o ID si lo necesitas
 
-  const ReserveSpacePage({super.key, required this.parkingName});
+  const ReserveSpacePage({super.key, required this.parking});
 
   @override
   State<ReserveSpacePage> createState() => _ReserveSpacePageState();
@@ -18,7 +21,7 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Reservar espacio en ${widget.parkingName}')),
+      appBar: AppBar(title: Text('Reservar espacio en ${widget.parking.name}')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -73,26 +76,21 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                 },
               ),
             ),
+            //reservando
             ElevatedButton.icon(
               onPressed:
                   selectedSpace != null
-                      ? () {
-                        // Aquí iría la lógica de guardar la reserva
-                        showDialog(
-                          context: context,
-                          builder:
-                              (_) => AlertDialog(
-                                title: const Text('Reserva confirmada'),
-                                content: Text(
-                                  'Reservaste el espacio $selectedSpace en ${widget.parkingName}.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              ),
+                      ? () async {
+                        // Aquí iría la lógica de guardar la reserva (ejemplo: en Firestore)
+
+                        // Mostrar el diálogo de post-reserva
+                        await PostReservationDialog.show(
+                          context,
+                          destination: LatLng(
+                            widget.parking.lat,
+                            widget.parking.lng,
+                          ), // ← reemplaza por coordenadas reales del parqueo
+                          parkingName: widget.parking.name,
                         );
                       }
                       : null,
