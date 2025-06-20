@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/services/geolocator.dart';
-import 'package:mapbox_api/services/mapbox_directions_service.dart';
-import 'package:mapbox_api/services/location_tracker.dart';
+import 'package:mapbox_api/modules/user_parking/services/geolocator.dart';
+import 'package:mapbox_api/modules/user_parking/services/mapbox_directions_service.dart';
+import 'package:mapbox_api/modules/user_parking/services/location_tracker.dart';
 import 'package:geolocator/geolocator.dart';
 
 const MAP_BOX_ACCESS_TOKEN =
@@ -53,18 +52,40 @@ class _RouteViewPageState extends State<RouteViewPage> {
       });
 
       // Escuchar ubicación en tiempo real
-      _positionSubscription = LocationTracker.getPositionStream().listen((pos) {
+      _positionSubscription = LocationTracker.getPositionStream().listen((
+        pos,
+      ) async {
         final updatedPos = LatLng(pos.latitude, pos.longitude);
         setState(() {
           _currentPosition = updatedPos;
         });
 
-        // Mover la cámara del mapa
+        final newRoute = await directions.getRouteCoordinates(
+          origin: updatedPos,
+          destination: widget.destination,
+        );
+
+        // Eliminar parte ya recorrida
+        final filteredRoute = _filterFutureRoutePoints(updatedPos, newRoute);
+
+        setState(() {
+          _routePoints = filteredRoute;
+        });
+
         _mapController.move(updatedPos, _mapController.camera.zoom);
       });
     } catch (e) {
       debugPrint('Error cargando ruta: $e');
     }
+  }
+
+  List<LatLng> _filterFutureRoutePoints(LatLng currentPos, List<LatLng> route) {
+    const threshold = 10.0; // en metros
+    final distance = Distance();
+    return route.skipWhile((point) {
+      final d = distance(currentPos, point);
+      return d < threshold;
+    }).toList();
   }
 
   @override
@@ -80,6 +101,16 @@ class _RouteViewPageState extends State<RouteViewPage> {
     }
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          if (_currentPosition != null) {
+            _mapController.move(_currentPosition!, _mapController.camera.zoom);
+          }
+        },
+        backgroundColor: Colors.blueAccent,
+        child: const Icon(Icons.my_location),
+      ),
+
       appBar: AppBar(title: Text('Ruta hacia ${widget.parkingName}')),
       body: FlutterMap(
         mapController: _mapController,

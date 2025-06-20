@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/pages/reserve_space_page.dart';
+import 'package:mapbox_api/modules/user_parking/pages/reserve_space_page.dart';
 import '../models/parking.dart';
 
 class ParkingDetailBottomSheet extends StatelessWidget {

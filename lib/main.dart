@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:mapbox_api/pages/map_screen.dart';
+import 'modules/user_parking/firebase_options.dart';
+import 'package:mapbox_api/modules/user_parking/pages/map_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

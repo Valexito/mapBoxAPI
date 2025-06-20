@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/models/parking.dart';
+import 'package:mapbox_api/modules/user_parking/models/parking.dart';
 import '../widgets/post_reservation_dialog.dart';
 import 'package:latlong2/latlong.dart';
 
