@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mapbox_api/modules/core/pages/profile_page.dart';
 import 'package:mapbox_api/modules/user_parking/pages/map_screen.dart';
 
 class HomePage extends StatelessWidget {
@@ -28,6 +29,17 @@ class HomePage extends StatelessWidget {
                 child: Icon(Icons.person, size: 42, color: Colors.grey),
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Perfil'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                );
+              },
+            ),
+
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Cerrar sesión'),

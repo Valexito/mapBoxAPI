@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
-import 'package:mapbox_api/modules/auth/pages/home_page.dart';
+import 'package:mapbox_api/modules/core/pages/home_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {

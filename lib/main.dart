@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
 import 'modules/user_parking/firebase_options.dart';
+import 'package:mapbox_api/modules/core/pages/become_provider_page.dart';
+import 'package:mapbox_api/modules/shared/pages/map_picker_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +22,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
       home: const AuthPage(),
+      routes: {
+        '/becomeProvider':
+            (_) => const BecomeProviderPage(), // 👈 aquí agregas la ruta
+        '/mapPicker': (_) => const MapPickerPage(),
+      },
     );
   }
 }

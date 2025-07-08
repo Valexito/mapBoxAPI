@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
-import 'package:mapbox_api/modules/auth/pages/home_page.dart';
+import 'package:mapbox_api/modules/core/pages/home_page.dart';
 import 'package:mapbox_api/modules/auth/pages/login_page.dart';
 import 'package:mapbox_api/modules/auth/pages/register_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
