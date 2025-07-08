@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mapbox_api/modules/auth/services/auth_page.dart';
 import 'modules/user_parking/firebase_options.dart';
-import 'package:mapbox_api/modules/user_parking/pages/map_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Mapa con Parqueos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
-      home: const MapScreen(),
+      home: const AuthPage(),
     );
   }
 }

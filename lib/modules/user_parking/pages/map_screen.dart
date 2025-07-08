@@ -105,10 +105,6 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Parqueos Cercanos'),
-        backgroundColor: Colors.blueAccent,
-      ),
       body: FlutterMap(
         options: MapOptions(initialCenter: currentPosition!, initialZoom: 16),
         children: [
