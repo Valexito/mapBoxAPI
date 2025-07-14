@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/my_button.dart';
 import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/components/my_textfield.dart';
-import 'package:mapbox_api/modules/core/pages/home_page.dart';
+import 'package:mapbox_api/modules/core/pages/hamburger_icon.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   final User user;
@@ -60,7 +60,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage>
       if (context.mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage()),
+          MaterialPageRoute(builder: (_) => HamburguerIcon()),
         );
       }
     } catch (e) {

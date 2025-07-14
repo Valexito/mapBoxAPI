@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
-import 'package:mapbox_api/modules/core/pages/home_page.dart';
+import 'package:mapbox_api/modules/core/pages/hamburger_icon.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -53,7 +53,7 @@ class AuthService {
       if (doc.exists) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage()),
+          MaterialPageRoute(builder: (_) => HamburguerIcon()),
         );
       } else {
         Navigator.pushReplacement(
@@ -107,7 +107,7 @@ class AuthService {
       if (doc.exists) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage()),
+          MaterialPageRoute(builder: (_) => HamburguerIcon()),
         );
       } else {
         Navigator.pushReplacement(
