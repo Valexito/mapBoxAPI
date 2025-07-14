@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/components/my_textfield.dart';
 
 class ForgotPasswordDialog extends StatefulWidget {
   const ForgotPasswordDialog({super.key});
@@ -28,30 +30,74 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Restablecer contraseña'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Ingresa tu correo electrónico para recibir un enlace.'),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _emailController,
-            decoration: const InputDecoration(labelText: 'Correo electrónico'),
-          ),
-          if (_message != null) ...[
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const MyText(
+              text: 'Restablecer contraseña',
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 10),
-            Text(_message!, style: const TextStyle(color: Colors.red)),
+            const MyText(
+              text: 'Ingresa tu correo electrónico para recibir un enlace.',
+              fontSize: 14,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            MyTextField(
+              controller: _emailController,
+              hintText: 'Correo electrónico',
+              obscureText: false,
+            ),
+            if (_message != null) ...[
+              const SizedBox(height: 10),
+              MyText(
+                text: _message!,
+                color: Colors.red,
+                fontSize: 13,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const MyText(text: 'Cancelar', color: Colors.grey),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _sendResetEmail,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007BFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  child: const MyText(
+                    text: 'Enviar',
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
-        TextButton(onPressed: _sendResetEmail, child: const Text('Enviar')),
-      ],
+      ),
     );
   }
 }

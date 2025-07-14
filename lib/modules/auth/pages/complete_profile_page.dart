@@ -1,50 +1,72 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../core/pages/home_page.dart';
+import 'package:mapbox_api/components/my_button.dart';
+import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/components/my_textfield.dart';
+import 'package:mapbox_api/modules/core/pages/home_page.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   final User user;
+  final bool isNewUser;
+  final String? password; // Optional for email/password users
 
-  const CompleteProfilePage({super.key, required this.user});
+  const CompleteProfilePage({
+    super.key,
+    required this.user,
+    required this.isNewUser,
+    this.password,
+  });
 
   @override
   State<CompleteProfilePage> createState() => _CompleteProfilePageState();
 }
 
-class _CompleteProfilePageState extends State<CompleteProfilePage> {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  String role = 'user'; // puedes cambiar a 'provider' si deseas
-
+class _CompleteProfilePageState extends State<CompleteProfilePage>
+    with SingleTickerProviderStateMixin {
+  final nameController = TextEditingController();
+  final phoneController = TextEditingController();
+  String role = 'user';
   bool isSaving = false;
+  double _logoOpacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      setState(() {
+        _logoOpacity = 1.0;
+      });
+    });
+  }
 
   Future<void> saveProfile() async {
     setState(() => isSaving = true);
 
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.user.uid)
-          .set({
-            'uid': widget.user.uid,
-            'email': widget.user.email,
-            'name': nameController.text.trim(),
-            'phone': phoneController.text.trim(),
-            'role': role,
-            'createdAt': Timestamp.now(),
-          });
+      final uid = widget.user.uid;
+      final email = widget.user.email ?? '';
 
-      // Ir al HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => HomePage()),
-      );
+      // Guardar en Firestore
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'uid': uid,
+        'email': email,
+        'name': nameController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'role': role,
+        'createdAt': Timestamp.now(),
+      });
+
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => HomePage()),
+        );
+      }
     } catch (e) {
-      debugPrint("Error guardando perfil: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ocurrió un error al guardar el perfil.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
       setState(() => isSaving = false);
     }
@@ -53,42 +75,114 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Completa tu perfil')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      backgroundColor: const Color(0xFF007BFF),
+      body: SafeArea(
+        child: Stack(
           children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Nombre completo'),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.85,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 40,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 20),
+                      const MyText(
+                        text: 'Complete Profile',
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 30),
+                      MyTextField(
+                        controller: nameController,
+                        hintText: 'Full Name',
+                        obscureText: false,
+                      ),
+                      const SizedBox(height: 15),
+                      MyTextField(
+                        controller: phoneController,
+                        hintText: 'Phone',
+                        obscureText: false,
+                      ),
+                      const SizedBox(height: 15),
+                      DropdownButtonFormField<String>(
+                        value: role,
+                        decoration: const InputDecoration(
+                          labelText: 'Role',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'user', child: Text('User')),
+                          DropdownMenuItem(
+                            value: 'provider',
+                            child: Text('Provider'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => role = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 30),
+                      isSaving
+                          ? const Center(child: CircularProgressIndicator())
+                          : MyButton(
+                            onTap: saveProfile,
+                            text: 'Save and continue',
+                            color: const Color(0xFF007BFF),
+                          ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: 'Teléfono'),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: role,
-              items: const [
-                DropdownMenuItem(value: 'user', child: Text('Usuario')),
-                DropdownMenuItem(value: 'provider', child: Text('Proveedor')),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => role = value);
-                }
-              },
-              decoration: const InputDecoration(labelText: 'Rol'),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: isSaving ? null : saveProfile,
-              child:
-                  isSaving
-                      ? const CircularProgressIndicator()
-                      : const Text('Guardar y continuar'),
+            Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: AnimatedOpacity(
+                  opacity: _logoOpacity,
+                  duration: const Duration(milliseconds: 800),
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/parking_logo.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

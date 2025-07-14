@@ -1,13 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
-import 'package:mapbox_api/modules/core/pages/home_page.dart';
-import 'package:mapbox_api/modules/auth/pages/login_page.dart';
-import 'package:mapbox_api/modules/auth/pages/register_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mapbox_api/modules/auth/pages/login_page.dart';
+import 'package:mapbox_api/modules/auth/pages/sign_up.dart';
 import 'package:mapbox_api/modules/auth/pages/splash_screen.dart';
+import 'package:mapbox_api/modules/core/pages/home_page.dart';
 
-// AuthPage decides whether to show Login or Home/Register based on auth state
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -33,35 +30,16 @@ class _AuthPageState extends State<AuthPage> {
           return const SplashScreen();
         }
 
-        // Usuario autenticado
+        // Si el usuario ya está autenticado, mostrar Home
         if (snapshot.hasData) {
-          final user = snapshot.data!;
-
-          return FutureBuilder<DocumentSnapshot>(
-            future:
-                FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .get(),
-            builder: (context, docSnapshot) {
-              if (docSnapshot.connectionState == ConnectionState.waiting) {
-                return const SplashScreen();
-              }
-
-              if (docSnapshot.hasData && docSnapshot.data!.exists) {
-                return HomePage();
-              } else {
-                return CompleteProfilePage(user: user);
-              }
-            },
-          );
+          return HomePage();
         }
 
-        // Usuario no autenticado
+        // Si no está autenticado, mostrar login o register
         if (showLoginPage) {
           return LoginPage(showRegisterPage: toggleScreens);
         } else {
-          return RegisterPage(showLoginPage: toggleScreens);
+          return SignUpPage(showLoginPage: toggleScreens);
         }
       },
     );
