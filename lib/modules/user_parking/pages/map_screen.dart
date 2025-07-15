@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/modules/shared/bottom_nav_bar.dart';
+import 'package:mapbox_api/components/bottom_nav_bar.dart';
 import 'package:mapbox_api/modules/user_parking/services/geolocator.dart';
 import 'package:mapbox_api/modules/user_parking/services/parking_service.dart';
 import 'package:mapbox_api/modules/user_parking/models/parking.dart';

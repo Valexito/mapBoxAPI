@@ -4,12 +4,14 @@ class MyTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final bool obscureText;
+  final TextInputType? keyboardType;
 
   const MyTextField({
     super.key,
     required this.controller,
     required this.hintText,
     required this.obscureText,
+    this.keyboardType,
   });
 
   @override

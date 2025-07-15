@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mapbox_api/components/my_button.dart';
+import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/components/my_textfield.dart';
 
 class BecomeProviderPage extends StatefulWidget {
   const BecomeProviderPage({super.key});
@@ -10,17 +13,25 @@ class BecomeProviderPage extends StatefulWidget {
   State<BecomeProviderPage> createState() => _BecomeProviderPageState();
 }
 
-class _BecomeProviderPageState extends State<BecomeProviderPage> {
+class _BecomeProviderPageState extends State<BecomeProviderPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-
   final nameController = TextEditingController();
   final addressController = TextEditingController();
   final slotsController = TextEditingController();
   final scheduleController = TextEditingController();
   final contactPhoneController = TextEditingController();
-
   bool isSaving = false;
   LatLng? selectedLocation;
+  double _logoOpacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      setState(() => _logoOpacity = 1.0);
+    });
+  }
 
   Future<void> saveProviderInfo() async {
     if (!_formKey.currentState!.validate()) return;
@@ -35,18 +46,15 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
-
       final parkingName = nameController.text.trim();
       final address = addressController.text.trim();
       final slots = int.tryParse(slotsController.text.trim()) ?? 0;
       final schedule = scheduleController.text.trim();
       final contactPhone = contactPhoneController.text.trim();
+      final lat = selectedLocation!.latitude;
+      final lng = selectedLocation!.longitude;
+      const int price = 6;
 
-      final double lat = selectedLocation!.latitude;
-      final double lng = selectedLocation!.longitude;
-      final int price = 6;
-
-      // 1. Guardar en users/{uid}
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'role': 'provider',
         'providerProfile': {
@@ -60,7 +68,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
         },
       });
 
-      // 2. Guardar en parking/
       await FirebaseFirestore.instance.collection('parking').add({
         'name': parkingName,
         'lat': lat,
@@ -74,7 +81,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('¡Ahora eres proveedor de parqueos!')),
       );
-
       Navigator.pop(context);
     } catch (e) {
       debugPrint('Error: $e');
@@ -89,101 +95,138 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Convertirse en Proveedor')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              const Text(
-                'Datos del Parqueo',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre del parqueo',
+      backgroundColor: const Color(0xFF007BFF),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.88,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 40,
                 ),
-                validator: (value) => value!.isEmpty ? 'Requerido' : null,
-              ),
-
-              TextFormField(
-                controller: addressController,
-                decoration: const InputDecoration(labelText: 'Dirección'),
-                validator: (value) => value!.isEmpty ? 'Requerido' : null,
-              ),
-
-              TextFormField(
-                controller: slotsController,
-                decoration: const InputDecoration(
-                  labelText: 'Cantidad de espacios',
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? 'Requerido' : null,
-              ),
-
-              TextFormField(
-                controller: scheduleController,
-                decoration: const InputDecoration(
-                  labelText: 'Horario (ej. Lun a Vie 8am - 8pm)',
-                ),
-                validator: (value) => value!.isEmpty ? 'Requerido' : null,
-              ),
-
-              TextFormField(
-                controller: contactPhoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Teléfono de contacto',
-                ),
-                validator: (value) => value!.isEmpty ? 'Requerido' : null,
-              ),
-
-              const SizedBox(height: 20),
-
-              ElevatedButton.icon(
-                icon: const Icon(Icons.map),
-                label: Text(
-                  selectedLocation != null
-                      ? 'Ubicación seleccionada'
-                      : 'Seleccionar ubicación en el mapa',
-                ),
-                onPressed: () async {
-                  final result = await Navigator.pushNamed(
-                    context,
-                    '/mapPicker',
-                  );
-                  if (result is LatLng) {
-                    setState(() {
-                      selectedLocation = result;
-                    });
-                  }
-                },
-              ),
-
-              if (selectedLocation != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    'Lat: ${selectedLocation!.latitude}, Lng: ${selectedLocation!.longitude}',
-                    style: const TextStyle(color: Colors.green),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        const MyText(
+                          text: 'Convertirse en Proveedor',
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 25),
+                        MyTextField(
+                          controller: nameController,
+                          hintText: 'Nombre del parqueo',
+                          obscureText: false,
+                        ),
+                        const SizedBox(height: 15),
+                        MyTextField(
+                          controller: addressController,
+                          hintText: 'Dirección',
+                          obscureText: false,
+                        ),
+                        const SizedBox(height: 15),
+                        MyTextField(
+                          controller: slotsController,
+                          hintText: 'Cantidad de espacios',
+                          obscureText: false,
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 15),
+                        MyTextField(
+                          controller: scheduleController,
+                          hintText: 'Horario (ej. Lun a Vie 8am - 8pm)',
+                          obscureText: false,
+                        ),
+                        const SizedBox(height: 15),
+                        MyTextField(
+                          controller: contactPhoneController,
+                          hintText: 'Teléfono de contacto',
+                          obscureText: false,
+                        ),
+                        const SizedBox(height: 15),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.map),
+                          label: Text(
+                            selectedLocation != null
+                                ? 'Ubicación seleccionada'
+                                : 'Seleccionar ubicación en el mapa',
+                          ),
+                          onPressed: () async {
+                            final result = await Navigator.pushNamed(
+                              context,
+                              '/mapPicker',
+                            );
+                            if (result is LatLng) {
+                              setState(() => selectedLocation = result);
+                            }
+                          },
+                        ),
+                        if (selectedLocation != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'Lat: ${selectedLocation!.latitude}, Lng: ${selectedLocation!.longitude}',
+                              style: const TextStyle(color: Colors.green),
+                            ),
+                          ),
+                        const SizedBox(height: 25),
+                        isSaving
+                            ? const CircularProgressIndicator()
+                            : MyButton(
+                              onTap: saveProviderInfo,
+                              text: 'Guardar y Activar Perfil',
+                              color: const Color(0xFF007BFF),
+                            ),
+                      ],
+                    ),
                   ),
                 ),
-
-              const SizedBox(height: 30),
-
-              ElevatedButton.icon(
-                icon: const Icon(Icons.check),
-                label:
-                    isSaving
-                        ? const CircularProgressIndicator()
-                        : const Text('Guardar y Activar Perfil'),
-                onPressed: isSaving ? null : saveProviderInfo,
               ),
-            ],
-          ),
+            ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: AnimatedOpacity(
+                  opacity: _logoOpacity,
+                  duration: const Duration(milliseconds: 800),
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/parking_logo.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
