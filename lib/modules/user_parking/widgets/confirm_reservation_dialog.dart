@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/modules/user_parking/pages/route_view_page.dart';
 
 class ConfirmReservationDialog extends StatelessWidget {
-  final VoidCallback onConfirm;
+  final LatLng destination;
+  final String parkingName;
 
-  const ConfirmReservationDialog({super.key, required this.onConfirm});
+  const ConfirmReservationDialog({
+    super.key,
+    required this.destination,
+    required this.parkingName,
+  });
 
   static Future<void> show(
     BuildContext context, {
-    required VoidCallback onConfirm,
+    required LatLng destination,
+    required String parkingName,
   }) async {
     await showDialog(
       context: context,
-      builder: (_) => ConfirmReservationDialog(onConfirm: onConfirm),
+      builder:
+          (_) => ConfirmReservationDialog(
+            destination: destination,
+            parkingName: parkingName,
+          ),
     );
   }
 
@@ -27,14 +39,15 @@ class ConfirmReservationDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const MyText(
-              text: '¿Confirmar reserva?',
+              text: '✅ ¡Reserva confirmada!',
               fontSize: 20,
               fontWeight: FontWeight.bold,
               textAlign: TextAlign.center,
+              color: Colors.green,
             ),
             const SizedBox(height: 10),
             const MyText(
-              text: '¿Deseas confirmar tu reserva para este espacio?',
+              text: '¿Deseas ir al parqueo ahora?',
               fontSize: 14,
               textAlign: TextAlign.center,
             ),
@@ -50,7 +63,16 @@ class ConfirmReservationDialog extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    onConfirm();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => RouteViewPage(
+                              destination: destination,
+                              parkingName: parkingName,
+                            ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF007BFF),
@@ -63,7 +85,7 @@ class ConfirmReservationDialog extends StatelessWidget {
                     ),
                   ),
                   child: const MyText(
-                    text: 'Confirmar',
+                    text: 'Ir ahora',
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),

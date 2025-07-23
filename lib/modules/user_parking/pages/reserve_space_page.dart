@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/components/my_button.dart';
 import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/modules/user_parking/models/parking.dart';
@@ -108,17 +109,11 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                               ? () async {
                                 await ConfirmReservationDialog.show(
                                   context,
-                                  onConfirm: () {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Reserva confirmada en espacio $selectedSpace',
-                                        ),
-                                      ),
-                                    );
-                                    // Aquí puedes insertar lógica real, como guardar en Firestore o navegar.
-                                  },
+                                  destination: LatLng(
+                                    widget.parking.lat,
+                                    widget.parking.lng,
+                                  ),
+                                  parkingName: widget.parking.name,
                                 );
                               }
                               : null,
