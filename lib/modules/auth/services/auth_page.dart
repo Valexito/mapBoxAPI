@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mapbox_api/components/home_nav_page.dart';
 import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
 import 'package:mapbox_api/modules/auth/pages/login_page.dart';
 import 'package:mapbox_api/modules/auth/pages/sign_up.dart';
 import 'package:mapbox_api/modules/auth/pages/splash_screen.dart';
-import 'package:mapbox_api/modules/core/pages/hamburger_icon.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -29,13 +29,13 @@ class _AuthPageState extends State<AuthPage> {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen(); // puedes personalizar esto
+          return const SplashScreen();
         }
 
         final user = snapshot.data;
 
         if (user != null) {
-          // El usuario está autenticado, ahora verificamos si ya tiene perfil en Firestore
+          // Verifica si tiene perfil en Firestore
           return FutureBuilder<DocumentSnapshot>(
             future:
                 FirebaseFirestore.instance
@@ -44,14 +44,14 @@ class _AuthPageState extends State<AuthPage> {
                     .get(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return const SplashScreen(); // aún cargando
+                return const SplashScreen();
               }
 
               final doc = snapshot.data!;
               final exists = doc.exists;
 
               if (exists) {
-                return HamburguerIcon();
+                return const HomeNavigationPage(); // 👈 Nuevo destino
               } else {
                 return CompleteProfilePage(user: user, isNewUser: true);
               }
@@ -59,7 +59,7 @@ class _AuthPageState extends State<AuthPage> {
           );
         }
 
-        // No está autenticado aún
+        // No autenticado
         return showLoginPage
             ? LoginPage(showRegisterPage: toggleScreens)
             : SignUpPage(showLoginPage: toggleScreens);

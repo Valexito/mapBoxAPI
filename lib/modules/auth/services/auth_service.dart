@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
-import 'package:mapbox_api/modules/core/pages/hamburger_icon.dart';
+import 'package:mapbox_api/components/hamburger_icon.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;

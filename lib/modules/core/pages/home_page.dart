@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/components/bottom_nav_bar.dart';
 import 'package:mapbox_api/modules/user_parking/services/geolocator.dart';
 import 'package:mapbox_api/modules/user_parking/services/parking_service.dart';
 import 'package:mapbox_api/modules/user_parking/models/parking.dart';
@@ -20,15 +19,6 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   LatLng? currentPosition;
   List<Marker> _parkingMarkers = [];
-
-  int _currentIndex = 0;
-
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    // Aquí podrías hacer navegación condicional si quieres
-  }
 
   @override
   void initState() {
@@ -146,11 +136,6 @@ class _MapScreenState extends State<MapScreen> {
             ],
           ),
         ],
-      ),
-      //bottom nav bar
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
       ),
     );
   }

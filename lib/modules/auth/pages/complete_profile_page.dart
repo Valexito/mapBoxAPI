@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/my_button.dart';
 import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/components/my_textfield.dart';
-import 'package:mapbox_api/modules/core/pages/hamburger_icon.dart';
+import 'package:mapbox_api/components/hamburger_icon.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   final User user;
