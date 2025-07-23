@@ -19,6 +19,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   LatLng? currentPosition;
   List<Marker> _parkingMarkers = [];
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -45,7 +46,6 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadParkingMarkers() async {
     final parkingService = ParkingService();
     final parkings = await parkingService.getAllParkings();
-    //test if it's getting response from firebase
     print('Parqueos obtenidos: ${parkings.length}');
     final markers =
         parkings.map((parking) {
@@ -106,34 +106,56 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return Scaffold(
-      body: FlutterMap(
-        options: MapOptions(initialCenter: currentPosition!, initialZoom: 16),
+      body: Stack(
         children: [
-          TileLayer(
-            urlTemplate:
-                'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$MAP_BOX_ACCESS_TOKEN',
-            additionalOptions: {
-              'accessToken': MAP_BOX_ACCESS_TOKEN,
-              'id': 'mapbox/streets-v12',
-            },
-            userAgentPackageName: 'com.example.mapbox_api',
-          ),
-          MarkerLayer(
-            markers: [
-              // Tu ubicación
-              Marker(
-                point: currentPosition!,
-                width: 40,
-                height: 40,
-                child: const Icon(
-                  Icons.my_location,
-                  color: Colors.green,
-                  size: 40,
-                ),
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: currentPosition!,
+              initialZoom: 16,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$MAP_BOX_ACCESS_TOKEN',
+                additionalOptions: {
+                  'accessToken': MAP_BOX_ACCESS_TOKEN,
+                  'id': 'mapbox/streets-v12',
+                },
+                userAgentPackageName: 'com.example.mapbox_api',
               ),
-              // Marcadores de Firestore
-              ..._parkingMarkers,
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: currentPosition!,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.my_location,
+                      color: Colors.green,
+                      size: 40,
+                    ),
+                  ),
+                  ..._parkingMarkers,
+                ],
+              ),
             ],
+          ),
+
+          // 🔄 Botón para reposicionar la cámara
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              backgroundColor: Colors.white,
+              shape: const CircleBorder(),
+              onPressed: () {
+                if (currentPosition != null) {
+                  _mapController.move(currentPosition!, 16);
+                }
+              },
+              child: const Icon(Icons.my_location, color: Colors.black),
+            ),
           ),
         ],
       ),
