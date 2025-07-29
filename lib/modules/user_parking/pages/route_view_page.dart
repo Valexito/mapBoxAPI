@@ -6,6 +6,7 @@ import 'package:mapbox_api/modules/user_parking/services/geolocator.dart';
 import 'package:mapbox_api/modules/user_parking/services/mapbox_directions_service.dart';
 import 'package:mapbox_api/modules/user_parking/services/location_tracker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mapbox_api/modules/user_parking/widgets/route_bottom_info_card.dart';
 
 const MAP_BOX_ACCESS_TOKEN =
     'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
@@ -30,6 +31,9 @@ class _RouteViewPageState extends State<RouteViewPage> {
   final _mapController = MapController();
   StreamSubscription<Position>? _positionSubscription;
 
+  String _distance = '...';
+  String _duration = '...';
+
   @override
   void initState() {
     super.initState();
@@ -46,26 +50,34 @@ class _RouteViewPageState extends State<RouteViewPage> {
         destination: widget.destination,
       );
 
+      final duration = await directions.getRouteDuration(
+        origin: position,
+        destination: widget.destination,
+      );
+
+      final distance = await directions.getRouteDistance(
+        origin: position,
+        destination: widget.destination,
+      );
+
       setState(() {
         _currentPosition = position;
         _routePoints = points;
+        _duration = duration;
+        _distance = distance;
       });
 
-      // Escuchar ubicación en tiempo real
       _positionSubscription = LocationTracker.getPositionStream().listen((
         pos,
       ) async {
         final updatedPos = LatLng(pos.latitude, pos.longitude);
-        setState(() {
-          _currentPosition = updatedPos;
-        });
+        setState(() => _currentPosition = updatedPos);
 
         final newRoute = await directions.getRouteCoordinates(
           origin: updatedPos,
           destination: widget.destination,
         );
 
-        // Eliminar parte ya recorrida
         final filteredRoute = _filterFutureRoutePoints(updatedPos, newRoute);
 
         setState(() {
@@ -80,7 +92,7 @@ class _RouteViewPageState extends State<RouteViewPage> {
   }
 
   List<LatLng> _filterFutureRoutePoints(LatLng currentPos, List<LatLng> route) {
-    const threshold = 10.0; // en metros
+    const threshold = 10.0;
     final distance = Distance();
     return route.skipWhile((point) {
       final d = distance(currentPos, point);
@@ -101,17 +113,20 @@ class _RouteViewPageState extends State<RouteViewPage> {
     }
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Ruta hacia ${widget.parkingName}'),
+        backgroundColor: const Color(0xFF1976D2),
+        foregroundColor: Colors.white,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (_currentPosition != null) {
             _mapController.move(_currentPosition!, _mapController.camera.zoom);
           }
         },
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color(0xFF1976D2),
         child: const Icon(Icons.my_location),
       ),
-
-      appBar: AppBar(title: Text('Ruta hacia ${widget.parkingName}')),
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(initialCenter: _currentPosition!, initialZoom: 15),
@@ -126,7 +141,7 @@ class _RouteViewPageState extends State<RouteViewPage> {
               Polyline(
                 points: _routePoints,
                 strokeWidth: 5,
-                color: Colors.blue,
+                color: const Color(0xFF1976D2),
               ),
             ],
           ),
@@ -155,6 +170,17 @@ class _RouteViewPageState extends State<RouteViewPage> {
             ],
           ),
         ],
+      ),
+      bottomSheet: RouteBottomInfoCard(
+        parkingName: widget.parkingName,
+        distance: _distance,
+        duration: _duration,
+        onNavigate: () {
+          // TODO: iniciar navegación guiada
+        },
+        onCancel: () {
+          Navigator.pop(context);
+        },
       ),
     );
   }

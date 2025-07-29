@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mapbox_api/modules/core/pages/home_nav_page.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
+import 'package:mapbox_api/modules/user_parking/widgets/route_view_page_wrapper.dart';
 import 'modules/user_parking/firebase_options.dart';
 import 'package:mapbox_api/modules/core/pages/become_provider_page.dart';
 import 'package:mapbox_api/components/map_picker_page.dart';
@@ -21,11 +23,13 @@ class MyApp extends StatelessWidget {
       title: 'Mapa con Parqueos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
-      home: const AuthPage(),
+      initialRoute: '/auth', // puedes cambiarlo si usas login automático
       routes: {
-        '/becomeProvider':
-            (_) => const BecomeProviderPage(), // 👈 aquí agregas la ruta
+        '/auth': (_) => const AuthPage(),
+        '/homeNav': (_) => const HomeNavigationPage(),
+        '/becomeProvider': (_) => const BecomeProviderPage(),
         '/mapPicker': (_) => const MapPickerPage(),
+        '/routeView': (_) => const RouteViewPageWrapper(), // con args adentro
       },
     );
   }

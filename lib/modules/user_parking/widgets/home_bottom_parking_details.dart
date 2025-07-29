@@ -3,10 +3,10 @@ import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/modules/user_parking/pages/reserve_space_page.dart';
 import '../models/parking.dart';
 
-class ParkingDetailBottomSheet extends StatelessWidget {
+class HomeParkingDetailBottomSheet extends StatelessWidget {
   final Parking parking;
 
-  const ParkingDetailBottomSheet({super.key, required this.parking});
+  const HomeParkingDetailBottomSheet({super.key, required this.parking});
 
   @override
   Widget build(BuildContext context) {

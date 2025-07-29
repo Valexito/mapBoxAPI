@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/components/my_text.dart';
-import 'package:mapbox_api/modules/user_parking/pages/route_view_page.dart';
 
 class ConfirmReservationDialog extends StatelessWidget {
   final LatLng destination;
@@ -39,16 +38,8 @@ class ConfirmReservationDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const MyText(
-              text: '✅ ¡Reserva confirmada!',
+              text: '¿Reservar el espacio No. 2?',
               fontSize: 20,
-              fontWeight: FontWeight.bold,
-              textAlign: TextAlign.center,
-              color: Colors.green,
-            ),
-            const SizedBox(height: 10),
-            const MyText(
-              text: '¿Deseas ir al parqueo ahora?',
-              fontSize: 14,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -57,21 +48,25 @@ class ConfirmReservationDialog extends StatelessWidget {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const MyText(text: 'Cancelar', color: Colors.grey),
+                  child: const MyText(
+                    text: 'Cancelar',
+                    color: Color.fromARGB(255, 64, 63, 63),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => RouteViewPage(
-                              destination: destination,
-                              parkingName: parkingName,
-                            ),
-                      ),
+                    Navigator.pop(context); // Cierra el diálogo
+
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/routeView',
+                      ModalRoute.withName(
+                        '/homeNav',
+                      ), // 👈 cambia si tu home tiene otro nombre
+                      arguments: {
+                        'destination': destination,
+                        'parkingName': parkingName,
+                      },
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -85,7 +80,7 @@ class ConfirmReservationDialog extends StatelessWidget {
                     ),
                   ),
                   child: const MyText(
-                    text: 'Ir ahora',
+                    text: 'Confirmar',
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
