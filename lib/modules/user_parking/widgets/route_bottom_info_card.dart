@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mapbox_api/components/my_text.dart';
 
 class RouteBottomInfoCard extends StatelessWidget {
   final String parkingName;
   final String distance;
   final String duration;
   final VoidCallback onNavigate;
-  final VoidCallback onCancel;
+  final VoidCallback onCancelLater;
 
   const RouteBottomInfoCard({
     super.key,
@@ -13,7 +14,7 @@ class RouteBottomInfoCard extends StatelessWidget {
     required this.distance,
     required this.duration,
     required this.onNavigate,
-    required this.onCancel,
+    required this.onCancelLater,
   });
 
   @override
@@ -29,51 +30,76 @@ class RouteBottomInfoCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            parkingName,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          MyText(
+            text: parkingName,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.directions_walk, size: 20),
+              const Icon(
+                Icons.directions_walk,
+                size: 20,
+                color: Colors.black54,
+              ),
               const SizedBox(width: 6),
-              Text('Distancia: $distance'),
+              MyText(text: 'Distancia: $distance', color: Colors.black87),
               const SizedBox(width: 16),
-              const Icon(Icons.timer, size: 20),
+              const Icon(Icons.timer, size: 20, color: Colors.black54),
               const SizedBox(width: 6),
-              Text('Tiempo estimado: $duration'),
+              MyText(text: 'Tiempo estimado: $duration', color: Colors.black87),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
+              // Botón azul: Navegar
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/mapNavigation');
-                  },
-                  icon: const Icon(Icons.navigation),
-                  label: const Text('Iniciar navegación'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
+                child: GestureDetector(
+                  onTap: onNavigate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1976D2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(
+                      child: MyText(
+                        text: "Navegar",
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
+              // Botón blanco con borde azul: Más tarde
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/homeNav',
-                      (route) => false,
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.grey),
+                child: GestureDetector(
+                  onTap: onCancelLater,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF1976D2),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Center(
+                      child: MyText(
+                        text: "Más tarde",
+                        color: Color(0xFF1976D2),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
-                  child: const Text('Más tarde'),
                 ),
               ),
             ],

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mapbox_api/modules/user_parking/pages/map_navigation_page.dart';
 import 'package:mapbox_api/modules/user_parking/services/geolocator.dart';
 import 'package:mapbox_api/modules/user_parking/services/mapbox_directions_service.dart';
 import 'package:mapbox_api/modules/user_parking/services/location_tracker.dart';
@@ -113,11 +114,6 @@ class _RouteViewPageState extends State<RouteViewPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Ruta hacia ${widget.parkingName}'),
-        backgroundColor: const Color(0xFF1976D2),
-        foregroundColor: Colors.white,
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (_currentPosition != null) {
@@ -176,10 +172,13 @@ class _RouteViewPageState extends State<RouteViewPage> {
         distance: _distance,
         duration: _duration,
         onNavigate: () {
-          // TODO: iniciar navegación guiada
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MapNavigationPage()),
+          );
         },
-        onCancel: () {
-          Navigator.pop(context);
+        onCancelLater: () {
+          Navigator.pushReplacementNamed(context, '/homePage');
         },
       ),
     );
