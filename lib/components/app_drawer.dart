@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
+import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
+import 'package:mapbox_api/modules/core/pages/favorites_page.dart';
+import 'package:mapbox_api/modules/core/pages/profile_page.dart';
+// Si tienes más páginas, agrégalas aquí
 
 class AppDrawer extends StatelessWidget {
-  final Function(int index) onSelectTab;
-
-  const AppDrawer({super.key, required this.onSelectTab});
+  const AppDrawer({super.key});
 
   void signUserOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
@@ -80,8 +82,13 @@ class AppDrawer extends StatelessWidget {
                       fontSize: 16,
                     ),
                     onTap: () {
-                      onSelectTab(1); // Index de MyReservations
-                      Navigator.pop(context);
+                      Navigator.pop(context); // Cierra el drawer
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ReservationsPage(),
+                        ),
+                      );
                     },
                   ),
                   ListTile(
@@ -95,8 +102,13 @@ class AppDrawer extends StatelessWidget {
                       fontSize: 16,
                     ),
                     onTap: () {
-                      onSelectTab(2); // Index de FavoritesPage
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FavoritesPage(),
+                        ),
+                      );
                     },
                   ),
                   ListTile(
@@ -107,8 +119,11 @@ class AppDrawer extends StatelessWidget {
                       fontSize: 16,
                     ),
                     onTap: () {
-                      onSelectTab(3); // Index de ProfilePage
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfilePage()),
+                      );
                     },
                   ),
                   ListTile(
@@ -122,7 +137,7 @@ class AppDrawer extends StatelessWidget {
                       fontSize: 16,
                     ),
                     onTap: () {
-                      // Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+                      // Agrega tu página de configuración si deseas
                     },
                   ),
                   ListTile(

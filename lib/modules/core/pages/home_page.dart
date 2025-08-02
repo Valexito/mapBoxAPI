@@ -16,81 +16,64 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const MapWidget(),
-    const ReservationsPage(),
-    const FavoritesPage(),
-    const ProfilePage(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      drawer: AppDrawer(
-        onSelectTab: (index) {
-          setState(() => _selectedIndex = index);
-        },
-      ),
+      drawer: const AppDrawer(), // Drawer ya maneja navegación con push
       body: Stack(
         children: [
-          _pages[_selectedIndex],
-
-          // Íconos flotantes SOLO en la vista de mapa (índice 0)
-          if (_selectedIndex == 0) ...[
-            Positioned(
-              top: 40,
-              left: 16,
-              child: _FloatingHamburgerIcon(
-                onTap: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
+          const MapWidget(), // solo el mapa como contenido principal
+          // Ícono hamburguesa
+          Positioned(
+            top: 40,
+            left: 16,
+            child: _FloatingHamburgerIcon(
+              onTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
-            Positioned(
-              top: 40,
-              right: 16,
-              child: _FloatingSettingsIcon(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
+          ),
+
+          // Ícono de configuración
+          Positioned(
+            top: 40,
+            right: 16,
+            child: _FloatingSettingsIcon(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
                     ),
-                    builder:
-                        (_) => Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            ListTile(
-                              leading: Icon(Icons.language),
-                              title: Text('Cambiar idioma'),
-                            ),
-                            ListTile(
-                              leading: Icon(Icons.brightness_6),
-                              title: Text('Cambiar tema'),
-                            ),
-                          ],
-                        ),
-                  );
-                },
-              ),
+                  ),
+                  builder:
+                      (_) => Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          ListTile(
+                            leading: Icon(Icons.language),
+                            title: Text('Cambiar idioma'),
+                          ),
+                          ListTile(
+                            leading: Icon(Icons.brightness_6),
+                            title: Text('Cambiar tema'),
+                          ),
+                        ],
+                      ),
+                );
+              },
             ),
+          ),
 
-            // ✅ Panel deslizable solo en vista de mapa
-            const HomeBottomPanel(),
-          ],
+          // Panel deslizable inferior
+          const HomeBottomPanel(),
         ],
       ),
     );
   }
 }
 
+// Botón hamburguesa
 class _FloatingHamburgerIcon extends StatelessWidget {
   final VoidCallback onTap;
   const _FloatingHamburgerIcon({required this.onTap});
@@ -101,6 +84,7 @@ class _FloatingHamburgerIcon extends StatelessWidget {
   }
 }
 
+// Botón de configuración
 class _FloatingSettingsIcon extends StatelessWidget {
   final VoidCallback onTap;
   const _FloatingSettingsIcon({required this.onTap});
@@ -111,6 +95,7 @@ class _FloatingSettingsIcon extends StatelessWidget {
   }
 }
 
+// Widget reutilizable para íconos flotantes
 class _FloatingIcon extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -128,7 +113,6 @@ class _FloatingIcon extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6)],
         ),
-        //color floating buttons home page
         child: Icon(icon, color: Colors.black),
       ),
     );

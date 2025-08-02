@@ -5,16 +5,20 @@ class ReservationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFF5F5F5), // color claro de fondo
-      body: Center(
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.pop(context); // ← Vuelve a HomePage
+          },
+        ),
+        title: const Text('Mis Reservas'),
+        backgroundColor: const Color(0xFF1976D2),
+      ),
+      body: const Center(
         child: Text(
-          'Mis Reservas',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          'Aquí se mostrarán tus reservas',
+          style: TextStyle(fontSize: 18),
         ),
       ),
     );
