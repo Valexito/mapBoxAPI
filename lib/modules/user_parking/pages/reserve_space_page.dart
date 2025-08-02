@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/components/my_button.dart';
 import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/modules/user_parking/models/parking.dart';
-import '../widgets/confirm_reservation_dialog.dart';
+import 'package:mapbox_api/modules/user_parking/models/reservation.dart';
 
 class ReserveSpacePage extends StatefulWidget {
   final Parking parking;
@@ -16,8 +18,42 @@ class ReserveSpacePage extends StatefulWidget {
 
 class _ReserveSpacePageState extends State<ReserveSpacePage> {
   final int totalSpaces = 20;
-  final List<int> occupiedSpaces = [2, 5, 6, 9];
+  final List<int> occupiedSpaces = [2, 5, 6, 9]; // Simulación
   int? selectedSpace;
+
+  Future<void> _confirmReservation() async {
+    final confirm = await ConfirmReservationDialog.show(
+      context,
+      destination: LatLng(widget.parking.lat, widget.parking.lng),
+      parkingName: widget.parking.name,
+    );
+
+    if (confirm == true && selectedSpace != null) {
+      final reservation = Reservation(
+        userId: FirebaseAuth.instance.currentUser!.uid,
+        parkingId: widget.parking.id,
+        parkingName: widget.parking.name,
+        spaceNumber: selectedSpace!,
+        reservedAt: DateTime.now(),
+        lat: widget.parking.lat,
+        lng: widget.parking.lng,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('reservations')
+          .add(reservation.toMap());
+
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/routeView',
+        ModalRoute.withName('/homeNav'),
+        arguments: {
+          'destination': LatLng(widget.parking.lat, widget.parking.lng),
+          'parkingName': widget.parking.name,
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,19 +140,7 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                     MyButton(
                       text: 'Confirmar Reserva',
                       color: const Color(0xFF007BFF),
-                      onTap:
-                          selectedSpace != null
-                              ? () async {
-                                await ConfirmReservationDialog.show(
-                                  context,
-                                  destination: LatLng(
-                                    widget.parking.lat,
-                                    widget.parking.lng,
-                                  ),
-                                  parkingName: widget.parking.name,
-                                );
-                              }
-                              : null,
+                      onTap: selectedSpace != null ? _confirmReservation : null,
                     ),
                   ],
                 ),
@@ -151,6 +175,33 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class ConfirmReservationDialog {
+  static Future<bool?> show(
+    BuildContext context, {
+    required LatLng destination,
+    required String parkingName,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('¿Confirmar reserva?'),
+            content: Text('Estás reservando en: $parkingName'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Confirmar'),
+              ),
+            ],
+          ),
     );
   }
 }

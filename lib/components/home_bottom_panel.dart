@@ -1,21 +1,62 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:mapbox_api/components/my_text.dart';
 import 'package:mapbox_api/components/my_textfield.dart';
 
-class HomeBottomPanel extends StatelessWidget {
+class HomeBottomPanel extends StatefulWidget {
   const HomeBottomPanel({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController _searchController = TextEditingController();
+  State<HomeBottomPanel> createState() => _HomeBottomPanelState();
+}
 
+class _HomeBottomPanelState extends State<HomeBottomPanel> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _suggestions = [];
+
+  void _onSearchChanged(String value) async {
+    if (value.length < 3) {
+      setState(() => _suggestions = []);
+      return;
+    }
+
+    final String accessToken =
+        'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A'; // ⚠️ PON TU TOKEN
+    final url =
+        'https://api.mapbox.com/geocoding/v5/mapbox.places/$value.json?access_token=$accessToken&autocomplete=true&country=GT&limit=5';
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final features = data['features'] as List;
+
+      setState(() {
+        _suggestions =
+            features
+                .map(
+                  (f) => {
+                    'name': f['text'],
+                    'address': f['place_name'],
+                    'coordinates': f['center'],
+                  },
+                )
+                .toList();
+      });
+    } else {
+      setState(() => _suggestions = []);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.18, // Altura inicial (solo el search)
+      initialChildSize: 0.18,
       minChildSize: 0.18,
-      maxChildSize: 0.6, // Altura máxima al expandirse
+      maxChildSize: 0.6,
       builder: (context, scrollController) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -43,43 +84,37 @@ class HomeBottomPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 MyTextField(
                   controller: _searchController,
                   hintText: '¿A dónde quieres ir?',
                   obscureText: false,
                   keyboardType: TextInputType.text,
+                  onChanged: _onSearchChanged,
                 ),
                 const SizedBox(height: 16),
-
-                const MyText(
-                  text: 'Recientes',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: Colors.black87,
-                ),
-                const SizedBox(height: 8),
-
-                // Ejemplo de lista
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.history, color: Color(0xFF1976D2)),
-                  title: const MyText(
-                    text: 'San Juan La Laguna',
-                    color: Colors.black,
-                    fontWeight: FontWeight.w500,
+                if (_suggestions.isNotEmpty)
+                  ..._suggestions.map(
+                    (s) => ListTile(
+                      leading: const Icon(
+                        Icons.place,
+                        color: Color(0xFF1976D2),
+                      ),
+                      title: MyText(
+                        text: s['name'],
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                      subtitle: MyText(
+                        text: s['address'],
+                        color: Colors.black54,
+                        fontSize: 13,
+                      ),
+                      onTap: () {
+                        // Aquí puedes manejar la selección del lugar
+                        print('Seleccionado: ${s['address']}');
+                      },
+                    ),
                   ),
-                  subtitle: const MyText(
-                    text: '3ra calle, San Juan La Laguna',
-                    color: Colors.black54,
-                    fontSize: 13,
-                  ),
-                  onTap: () {
-                    // Acción al tocar reciente
-                  },
-                ),
-
-                // Puedes seguir agregando más recientes aquí
               ],
             ),
           ),

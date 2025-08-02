@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/home_bottom_panel.dart';
 import 'package:mapbox_api/components/app_drawer.dart';
-import 'package:mapbox_api/modules/core/pages/favorites_page.dart';
-import 'package:mapbox_api/modules/core/pages/profile_page.dart';
-import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/core/widgets/map_widget.dart';
 
 class HomePage extends StatefulWidget {

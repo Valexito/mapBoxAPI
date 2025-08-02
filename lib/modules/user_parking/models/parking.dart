@@ -10,6 +10,7 @@ class Parking {
   final String? imageUrl; // para Firebase (nube)
   final String? localImagePath; // para assets locales
   final String? descripcion;
+  final String id;
 
   Parking({
     required this.lat,
@@ -23,10 +24,12 @@ class Parking {
     this.imageUrl,
     this.localImagePath,
     this.descripcion,
+    required this.id,
   });
 
   factory Parking.fromMap(Map<String, dynamic> data) {
     return Parking(
+      id: 'id',
       lat: data['lat'],
       lng: data['lng'],
       name: data['name'],
