@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/user_parking/pages/reserve_space_page.dart';
 import '../../user_parking/models/parking.dart';
 

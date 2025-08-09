@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/user_parking/models/reservation.dart';
 
 class ReservationsPage extends StatelessWidget {

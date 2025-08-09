@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:mapbox_api/components/my_text.dart';
-import 'package:mapbox_api/components/my_textfield.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/components/ui/my_textfield.dart';
 
 class HomeBottomPanel extends StatefulWidget {
   const HomeBottomPanel({super.key});

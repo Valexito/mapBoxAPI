@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/components/my_button.dart';
-import 'package:mapbox_api/components/my_text.dart';
-import 'package:mapbox_api/components/my_textfield.dart';
+import 'package:mapbox_api/components/ui/my_button.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/components/ui/my_textfield.dart';
 
 class BecomeProviderPage extends StatefulWidget {
   const BecomeProviderPage({super.key});

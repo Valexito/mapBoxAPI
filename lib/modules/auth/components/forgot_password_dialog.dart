@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mapbox_api/components/my_text.dart';
-import 'package:mapbox_api/components/my_textfield.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/components/ui/my_textfield.dart';
 
 class ForgotPasswordDialog extends StatefulWidget {
   const ForgotPasswordDialog({super.key});

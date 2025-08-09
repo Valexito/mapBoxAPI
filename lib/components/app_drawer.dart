@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mapbox_api/components/my_text.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
 import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/core/pages/favorites_page.dart';
