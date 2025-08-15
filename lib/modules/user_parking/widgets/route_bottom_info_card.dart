@@ -30,12 +30,7 @@ class RouteBottomInfoCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MyText(
-            text: parkingName,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+          MyText(text: parkingName, fontSize: 18, variant: MyTextVariant.title),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -45,11 +40,17 @@ class RouteBottomInfoCard extends StatelessWidget {
                 color: Colors.black54,
               ),
               const SizedBox(width: 6),
-              MyText(text: 'Distancia: $distance', color: Colors.black87),
+              MyText(
+                text: 'Distancia: $distance',
+                variant: MyTextVariant.normal,
+              ),
               const SizedBox(width: 16),
               const Icon(Icons.timer, size: 20, color: Colors.black54),
               const SizedBox(width: 6),
-              MyText(text: 'Tiempo estimado: $duration', color: Colors.black87),
+              MyText(
+                text: 'Tiempo estimado: $duration',
+                variant: MyTextVariant.normal,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -68,8 +69,7 @@ class RouteBottomInfoCard extends StatelessWidget {
                     child: const Center(
                       child: MyText(
                         text: "Navegar",
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        variant: MyTextVariant.body,
                         fontSize: 16,
                       ),
                     ),
@@ -94,8 +94,7 @@ class RouteBottomInfoCard extends StatelessWidget {
                     child: const Center(
                       child: MyText(
                         text: "Más tarde",
-                        color: Color(0xFF1976D2),
-                        fontWeight: FontWeight.bold,
+                        variant: MyTextVariant.body,
                         fontSize: 16,
                       ),
                     ),

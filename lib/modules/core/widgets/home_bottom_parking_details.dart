@@ -76,13 +76,13 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                 MyText(
                   text: 'Parqueo en ${parking.name}',
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  variant: MyTextVariant.title,
                 ),
                 const SizedBox(height: 6),
                 MyText(
                   text: parking.descripcion ?? 'Descripción no disponible',
                   fontSize: 14,
-                  color: Colors.black54,
+                  variant: MyTextVariant.body,
                 ),
                 const SizedBox(height: 12),
 
@@ -91,8 +91,7 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                     MyText(
                       text: 'Q${parking.price} por noche',
                       fontSize: 16,
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
+                      variant: MyTextVariant.bodyBold,
                     ),
                     const Spacer(),
                     const Icon(Icons.star, size: 18, color: Colors.black87),
@@ -100,7 +99,7 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                     MyText(
                       text: parking.rating?.toStringAsFixed(2) ?? '4.8',
                       fontSize: 14,
-                      color: Colors.black87,
+                      variant: MyTextVariant.body,
                     ),
                   ],
                 ),
@@ -109,7 +108,7 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                 MyText(
                   text: 'Espacios disponibles: ${parking.spaces}',
                   fontSize: 14,
-                  color: Colors.black87,
+                  variant: MyTextVariant.body,
                 ),
 
                 const SizedBox(height: 20),

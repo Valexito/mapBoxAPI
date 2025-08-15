@@ -5,12 +5,15 @@ import 'package:mapbox_api/modules/auth/services/auth_page.dart';
 import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/core/pages/favorites_page.dart';
 import 'package:mapbox_api/modules/core/pages/profile_page.dart';
-// Si tienes más páginas, agrégalas aquí
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
-  void signUserOut(BuildContext context) async {
+  static const primary = Color(0xFF1976D2);
+  static const navy = Color(0xFF0D1B2A);
+  static const navyLight = Color(0xFF1B3A57);
+
+  Future<void> _signUserOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
@@ -23,66 +26,69 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser!;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Drawer(
       child: Column(
         children: [
+          // ===== HEADER (gradiente) =====
           Container(
-            color: const Color(0xFF007BFF),
-            padding: const EdgeInsets.only(top: 40, bottom: 20),
             width: double.infinity,
+            padding: const EdgeInsets.only(top: 48, bottom: 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [navy, navyLight],
+              ),
+            ),
             child: Column(
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 84,
+                  height: 84,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: const [
                       BoxShadow(
                         color: Colors.black26,
-                        blurRadius: 6,
-                        offset: Offset(0, 3),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.person, size: 42, color: Colors.grey),
+                  child: const Icon(Icons.person, size: 44, color: Colors.grey),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 MyText(
-                  text: user.displayName ?? 'Usuario',
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  text: user?.displayName ?? 'Usuario',
+                  variant: MyTextVariant.normalBold,
                   fontSize: 16,
                 ),
+                const SizedBox(height: 2),
                 MyText(
-                  text: user.email ?? '',
-                  color: Colors.white70,
-                  fontSize: 14,
+                  text: user?.email ?? '',
+                  variant: MyTextVariant.normal,
+                  fontSize: 12,
                 ),
               ],
             ),
           ),
+
+          // ===== ITEMS (fondo blanco) =====
           Expanded(
             child: Container(
-              color: Colors.white,
+              color: Colors.white, // ← fondo blanco solo en la zona de opciones
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  ListTile(
-                    leading: const Icon(
-                      Icons.bookmark,
-                      color: Color(0xFF007BFF),
-                    ),
-                    title: const MyText(
-                      text: 'Mis reservas',
-                      color: Color(0xFF007BFF),
-                      fontSize: 16,
-                    ),
+                  const SizedBox(height: 8),
+                  _DrawerItem(
+                    icon: Icons.bookmark,
+                    label: 'Mis reservas',
                     onTap: () {
-                      Navigator.pop(context); // Cierra el drawer
+                      Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -91,16 +97,9 @@ class AppDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.favorite,
-                      color: Color(0xFF007BFF),
-                    ),
-                    title: const MyText(
-                      text: 'Favoritos',
-                      color: Color(0xFF007BFF),
-                      fontSize: 16,
-                    ),
+                  _DrawerItem(
+                    icon: Icons.favorite,
+                    label: 'Favoritos',
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -111,13 +110,9 @@ class AppDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.person, color: Color(0xFF007BFF)),
-                    title: const MyText(
-                      text: 'Perfil',
-                      color: Color(0xFF007BFF),
-                      fontSize: 16,
-                    ),
+                  _DrawerItem(
+                    icon: Icons.person,
+                    label: 'Perfil',
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -126,34 +121,107 @@ class AppDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.settings,
-                      color: Color(0xFF007BFF),
-                    ),
-                    title: const MyText(
-                      text: 'Configuraciones',
-                      color: Color(0xFF007BFF),
-                      fontSize: 16,
-                    ),
+                  _DrawerItem(
+                    icon: Icons.settings,
+                    label: 'Configuraciones',
                     onTap: () {
-                      // Agrega tu página de configuración si deseas
+                      // TODO: ir a configuraciones
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: Color(0xFF007BFF)),
-                    title: const MyText(
-                      text: 'Cerrar sesión',
-                      color: Color(0xFF007BFF),
-                      fontSize: 16,
-                    ),
-                    onTap: () => signUserOut(context),
+
+                  _DrawerItem(
+                    icon: Icons.logout,
+                    label: 'Cerrar sesión',
+                    labelVariant: MyTextVariant.normalBold,
+                    onTap: () => _signUserOut(context),
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Ítem del Drawer con highlight al presionar (hold)
+class _DrawerItem extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final MyTextVariant labelVariant;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.labelVariant = MyTextVariant.normal,
+  });
+
+  @override
+  State<_DrawerItem> createState() => _DrawerItemState();
+}
+
+class _DrawerItemState extends State<_DrawerItem> {
+  static const primary = Color(0xFF1976D2);
+  static const navy = Color(0xFF0D1B2A);
+  static const navyLight = Color(0xFF1B3A57);
+
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = _pressed ? navyLight : Colors.transparent;
+    final Color ic = _pressed ? Colors.white : primary;
+
+    // Texto: normal con MyText; cuando está presionado, lo pinto blanco
+    final Widget title =
+        _pressed
+            ? Text(
+              widget.label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight:
+                    widget.labelVariant == MyTextVariant.normalBold
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+              ),
+            )
+            : MyText(
+              text: widget.label,
+              variant: widget.labelVariant,
+              fontSize: 16,
+            );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: (v) => setState(() => _pressed = v),
+          borderRadius: BorderRadius.circular(12),
+          splashColor: navy.withOpacity(0.15),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(widget.icon, color: ic),
+                const SizedBox(width: 12),
+                Expanded(child: title),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

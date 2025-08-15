@@ -120,7 +120,7 @@ class _BecomeProviderPageState extends State<BecomeProviderPage>
                         const MyText(
                           text: 'Convertirse en Proveedor',
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          variant: MyTextVariant.title,
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 25),

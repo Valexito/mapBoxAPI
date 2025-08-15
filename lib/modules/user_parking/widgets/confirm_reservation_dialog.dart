@@ -21,7 +21,7 @@ class ReservationsPage extends StatelessWidget {
           child: MyText(
             text: 'Debes iniciar sesión para ver tus reservas.',
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            variant: MyTextVariant.bodyMuted,
             textAlign: TextAlign.center,
           ),
         ),
@@ -59,7 +59,7 @@ class ReservationsPage extends StatelessWidget {
               child: MyText(
                 text: 'No tienes reservas aún.',
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                variant: MyTextVariant.bodyMuted,
               ),
             );
           }

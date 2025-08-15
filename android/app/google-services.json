@@ -12,7 +12,20 @@
           "package_name": "com.example.mapbox_api"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "85368638098-i4tq7ivet2a23dhe7kbfftk5re7750p0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mapbox_api",
+            "certificate_hash": "1e9fe7be01bc9dee963f2345ac0220f85193c5f5"
+          }
+        },
+        {
+          "client_id": "85368638098-ggg9rnv12fokcg9406rvd9bgv1hdhkr4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCv4TpVe4JXurYd6uBeMMKutbnkajQd0qY"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "85368638098-ggg9rnv12fokcg9406rvd9bgv1hdhkr4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

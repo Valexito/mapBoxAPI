@@ -99,8 +99,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage>
                       const SizedBox(height: 20),
                       const MyText(
                         text: 'Complete Profile',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        variant: MyTextVariant.title,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 30),

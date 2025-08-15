@@ -81,7 +81,7 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                     const MyText(
                       text: 'Selecciona tu espacio',
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      variant: MyTextVariant.title,
                     ),
                     const SizedBox(height: 20),
                     Expanded(
@@ -127,8 +127,7 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                               child: MyText(
                                 text: 'Espacio\n$spaceNumber',
                                 fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                variant: MyTextVariant.body,
                                 textAlign: TextAlign.center,
                               ),
                             ),

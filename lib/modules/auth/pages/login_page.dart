@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mapbox_api/components/ui/my_textfield.dart';
+import 'package:mapbox_api/components/ui/my_password_field.dart';
+import 'package:mapbox_api/components/ui/my_button.dart';
+import 'package:mapbox_api/components/ui/my_text.dart'; // <- con MyTextVariant
 import 'package:mapbox_api/modules/auth/services/auth_service.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/auth/components/square_tile.dart';
 import 'package:mapbox_api/modules/auth/components/forgot_password_dialog.dart';
 
@@ -18,7 +21,6 @@ class _LoginPageState extends State<LoginPage> {
   final authService = AuthService();
 
   bool _rememberMe = false;
-  bool _obscure = true;
 
   @override
   void dispose() {
@@ -56,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
                       Icon(Icons.directions_car, size: 60, color: Colors.white),
                       SizedBox(height: 8),
                       Text(
-                        'F R E E D O M',
+                        'LOGO APP',
                         style: TextStyle(
                           color: Colors.white,
                           letterSpacing: 5,
@@ -82,62 +84,30 @@ class _LoginPageState extends State<LoginPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const MyText(
-                            text: "SIGN IN",
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                          MyText(
+                            text: "Inicia sesión",
+                            variant: MyTextVariant.title, // TITLE
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 18),
 
                           // Email
-                          TextField(
+                          MyTextField(
                             controller: emailController,
+                            hintText: 'Nombre de usuario o email',
                             keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: 'Nombre de usuario o email',
-                              prefixIcon: const Icon(Icons.person_outline),
-                              filled: true,
-                              fillColor: const Color(0xFFF3F5F8),
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 16,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(26),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
+                            textInputAction: TextInputAction.next,
+                            obscureText: false,
+                            prefixIcon: Icons.person_outline,
+                            margin: EdgeInsets.zero,
                           ),
                           const SizedBox(height: 14),
 
                           // Password
-                          TextField(
+                          MyPasswordField(
                             controller: passwordController,
-                            obscureText: _obscure,
-                            decoration: InputDecoration(
-                              hintText: 'Contraseña',
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                onPressed:
-                                    () => setState(() => _obscure = !_obscure),
-                                icon: Icon(
-                                  _obscure
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF3F5F8),
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 16,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(26),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
+                            hintText: 'Contraseña',
+                            margin: EdgeInsets.zero,
                           ),
 
                           const SizedBox(height: 8),
@@ -149,9 +119,12 @@ class _LoginPageState extends State<LoginPage> {
                                     (v) => setState(
                                       () => _rememberMe = v ?? false,
                                     ),
-                                activeColor: const Color(0xFF6D28D9),
+                                activeColor: const Color(0xFF1B3A57),
                               ),
-                              const MyText(text: "Remember me"),
+                              const MyText(
+                                text: "Recordarme",
+                                variant: MyTextVariant.normal, // NORMAL (blue)
+                              ),
                               const Spacer(),
                               TextButton(
                                 onPressed: () {
@@ -162,8 +135,9 @@ class _LoginPageState extends State<LoginPage> {
                                   );
                                 },
                                 child: const MyText(
-                                  text: 'Forgot Password?',
-                                  color: Color(0xFF6D28D9),
+                                  text: '¿Olvidaste contraseña?',
+                                  variant:
+                                      MyTextVariant.normalBold, // NORMAL BOLD
                                   fontSize: 14,
                                 ),
                               ),
@@ -172,64 +146,35 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: 8),
 
-                          // Botón Sign In
-                          SizedBox(
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                authService.signInUser(
-                                  context,
-                                  emailController.text.trim(),
-                                  passwordController.text.trim(),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(26),
-                                ),
-                                elevation: 0,
-                                backgroundColor: Colors.transparent,
-                              ),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF7C3AED),
-                                      Color(0xFF9333EA),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(26),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "SIGN IN",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                          // Botón Sign In (degradado azul marino)
+                          MyButton(
+                            text: "Iniciar sesión",
+                            onTap: () {
+                              authService.signInUser(
+                                context,
+                                emailController.text.trim(),
+                                passwordController.text.trim(),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 14),
 
-                          // Sign up
+                          // Still not connected?  /  Sign Up
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const MyText(
-                                text: "Still not connected? ",
+                                text: "Still not connected?",
+                                variant: MyTextVariant.normal, // NORMAL
                                 fontSize: 14,
                               ),
                               TextButton(
                                 onPressed: widget.showRegisterPage,
                                 child: const MyText(
                                   text: "Sign Up",
-                                  color: Color(0xFF7C3AED),
-                                  fontWeight: FontWeight.bold,
+                                  variant:
+                                      MyTextVariant.normalBold, // NORMAL BOLD
                                   fontSize: 14,
                                 ),
                               ),
@@ -245,6 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                                 padding: EdgeInsets.symmetric(horizontal: 8),
                                 child: MyText(
                                   text: "OR",
+                                  variant: MyTextVariant.normal, // NORMAL
                                   fontSize: 14,
                                   textAlign: TextAlign.center,
                                 ),
@@ -254,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 14),
 
-                          // Social buttons (con onTap)
+                          // Social buttons
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

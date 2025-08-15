@@ -7,200 +7,206 @@ import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
 
 class SignUpPage extends StatefulWidget {
   final VoidCallback showLoginPage;
-
   const SignUpPage({super.key, required this.showLoginPage});
 
   @override
   State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage>
-    with SingleTickerProviderStateMixin {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  double _logoOpacity = 0.0;
+class _SignUpPageState extends State<SignUpPage> {
+  final _username = TextEditingController();
+  final _email = TextEditingController();
+  final _mobile = TextEditingController();
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+  final _auth = FirebaseAuth.instance;
 
   @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 100), () {
-      setState(() {
-        _logoOpacity = 1.0;
-      });
-    });
+  void dispose() {
+    _username.dispose();
+    _email.dispose();
+    _mobile.dispose();
+    _password.dispose();
+    _confirm.dispose();
+    super.dispose();
   }
 
-  void showError(String message) {
+  void _showError(String msg) {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            content: MyText(text: message, color: Colors.red),
+          (_) => AlertDialog(
+            content: MyText(text: msg, variant: MyTextVariant.body),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
+                child: const Text('OK'),
               ),
             ],
           ),
     );
   }
 
-  Future<void> goToCompleteProfile() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
+  Future<void> _goToCompleteProfile() async {
+    final email = _email.text.trim();
+    final pass = _password.text.trim();
+    final confirm = _confirm.text.trim();
 
-    if (password != confirmPassword) {
-      showError("Las contraseñas no coinciden.");
+    if (pass != confirm) {
+      _showError('Las contraseñas no coinciden.');
       return;
     }
 
     try {
-      final UserCredential credential = await _auth
-          .createUserWithEmailAndPassword(email: email, password: password);
-      final user = credential.user;
-
-      if (user != null && context.mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => CompleteProfilePage(
-                  user: user,
-                  isNewUser: true,
-                  password: password,
-                ),
-          ),
-        );
-      }
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: pass,
+      );
+      final user = cred.user;
+      if (!mounted || user == null) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => CompleteProfilePage(
+                user: user,
+                isNewUser: true,
+                password: pass,
+              ),
+        ),
+      );
     } on FirebaseAuthException catch (e) {
-      showError(e.message ?? "No se pudo crear la cuenta.");
+      _showError(e.message ?? 'No se pudo crear la cuenta.');
     } catch (e) {
-      showError("Error inesperado: $e");
+      _showError('Error inesperado: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    const navyDark = Color(0xFF0D1B2A);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF007BFF),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                height: MediaQuery.of(context).size.height * 0.85,
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 30,
-                  vertical: 40,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 20),
-                      const MyText(
-                        text: 'Sign Up',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 30),
-                      MyTextField(
-                        controller: _emailController,
-                        hintText: 'Email',
-                        obscureText: false,
-                      ),
-                      const SizedBox(height: 15),
-                      MyTextField(
-                        controller: _passwordController,
-                        hintText: 'Password',
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 15),
-                      MyTextField(
-                        controller: _confirmPasswordController,
-                        hintText: 'Confirm Password',
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 30),
-                      MyButton(
-                        onTap: goToCompleteProfile,
-                        text: 'Continue',
-                        color: const Color(0xFF007BFF),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const MyText(
-                            text: "Already have an account?",
-                            fontSize: 14,
-                          ),
-                          TextButton(
-                            onPressed: widget.showLoginPage,
-                            child: const MyText(
-                              text: "Sign In",
-                              color: Color(0xFF007BFF),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+            // Contenido principal
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 40),
+                  const MyText(
+                    text: 'SIGN UP',
+                    variant: MyTextVariant.title,
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  const MyText(
+                    text:
+                        'Crea tu cuenta para continuar y acceder a todas las funciones.',
+                    variant: MyTextVariant.bodyMuted,
+                    textAlign: TextAlign.center,
+                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // User Name
+                  const MyText(
+                    text: 'User Name',
+                    variant: MyTextVariant.normal,
+                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 6),
+                  MyTextField(
+                    controller: _username,
+                    hintText: 'Enter User Name',
+                    prefixIcon: Icons.person_outline,
+                    obscureText: false,
+                    margin: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Email
+                  const MyText(
+                    text: 'Email',
+                    variant: MyTextVariant.normal,
+                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 6),
+                  MyTextField(
+                    controller: _email,
+                    hintText: 'Enter Email',
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: Icons.mail_outline,
+                    obscureText: false,
+                    margin: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Mobile Number
+                  const MyText(
+                    text: 'Mobile Number',
+                    variant: MyTextVariant.normal,
+                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 6),
+                  MyTextField(
+                    controller: _mobile,
+                    hintText: 'Enter your 10 digit mobile number',
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: Icons.phone_outlined,
+                    obscureText: false,
+                    margin: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Password
+                  const MyText(
+                    text: 'Password',
+                    variant: MyTextVariant.normal,
+                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 6),
+                  MyTextField(
+                    controller: _password,
+                    hintText: 'Password should be in 8-15 characters',
+                    obscureText: true,
+                    prefixIcon: Icons.lock_outline,
+                    margin: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Confirm Password
+                  const MyText(
+                    text: 'Confirm Password',
+                    variant: MyTextVariant.normal,
+                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 6),
+                  MyTextField(
+                    controller: _confirm,
+                    hintText: 'Repeat the Password',
+                    obscureText: true,
+                    prefixIcon: Icons.lock_outline,
+                    margin: EdgeInsets.zero,
+                  ),
+
+                  const SizedBox(height: 26),
+                  MyButton(onTap: _goToCompleteProfile, text: 'Sign Up'),
+                ],
               ),
             ),
-            Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 30),
-                child: AnimatedOpacity(
-                  opacity: _logoOpacity,
-                  duration: const Duration(milliseconds: 800),
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 6,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        'assets/images/parking_logo.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+
+            // Botón regresar esquina superior derecha
             Positioned(
-              top: 20,
-              left: 10,
+              top: 10,
+              right: 10,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: widget.showLoginPage,
+                icon: const Icon(Icons.close, color: navyDark, size: 26),
               ),
             ),
           ],

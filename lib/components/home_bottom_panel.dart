@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -14,36 +15,60 @@ class HomeBottomPanel extends StatefulWidget {
 class _HomeBottomPanelState extends State<HomeBottomPanel> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _suggestions = [];
+  Timer? _debounce;
 
-  void _onSearchChanged(String value) async {
-    if (value.length < 3) {
+  static const _debounceMs = 350;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: _debounceMs), () {
+      _fetchSuggestions(value);
+    });
+  }
+
+  Future<void> _fetchSuggestions(String value) async {
+    if (value.trim().length < 3) {
       setState(() => _suggestions = []);
       return;
     }
 
-    final String accessToken =
-        'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A'; // ⚠️ PON TU TOKEN
+    const String accessToken =
+        'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A'; // ⚠️ mueve a config/secure storage en producción
     final url =
         'https://api.mapbox.com/geocoding/v5/mapbox.places/$value.json?access_token=$accessToken&autocomplete=true&country=GT&limit=5';
 
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final features = data['features'] as List;
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (!mounted) return;
 
-      setState(() {
-        _suggestions =
-            features
-                .map(
-                  (f) => {
-                    'name': f['text'],
-                    'address': f['place_name'],
-                    'coordinates': f['center'],
-                  },
-                )
-                .toList();
-      });
-    } else {
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final features = (data['features'] as List?) ?? [];
+
+        setState(() {
+          _suggestions =
+              features
+                  .map(
+                    (f) => {
+                      'name': f['text'] ?? '',
+                      'address': f['place_name'] ?? '',
+                      'coordinates': f['center'] ?? [],
+                    },
+                  )
+                  .toList();
+        });
+      } else {
+        setState(() => _suggestions = []);
+      }
+    } catch (_) {
+      if (!mounted) return;
       setState(() => _suggestions = []);
     }
   }
@@ -73,6 +98,7 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // handle
                 Center(
                   child: Container(
                     height: 6,
@@ -84,37 +110,56 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
                     ),
                   ),
                 ),
+
+                // Search
                 MyTextField(
                   controller: _searchController,
                   hintText: '¿A dónde quieres ir?',
                   obscureText: false,
                   keyboardType: TextInputType.text,
+                  prefixIcon: Icons.search,
                   onChanged: _onSearchChanged,
+                  margin: EdgeInsets.zero,
                 ),
+
                 const SizedBox(height: 16),
-                if (_suggestions.isNotEmpty)
+
+                if (_suggestions.isNotEmpty) ...[
+                  const MyText(
+                    text: 'Sugerencias',
+                    variant: MyTextVariant.normalBold,
+                  ),
+                  const SizedBox(height: 8),
+
                   ..._suggestions.map(
-                    (s) => ListTile(
-                      leading: const Icon(
-                        Icons.place,
-                        color: Color(0xFF1976D2),
-                      ),
-                      title: MyText(
-                        text: s['name'],
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                      subtitle: MyText(
-                        text: s['address'],
-                        color: Colors.black54,
-                        fontSize: 13,
-                      ),
-                      onTap: () {
-                        // Aquí puedes manejar la selección del lugar
-                        print('Seleccionado: ${s['address']}');
-                      },
+                    (s) => Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(
+                            Icons.place,
+                            color: Color(0xFF1976D2),
+                          ),
+                          title: MyText(
+                            text: s['name'] ?? '',
+                            variant: MyTextVariant.body, // negro, 15, w500
+                          ),
+                          subtitle: MyText(
+                            text: s['address'] ?? '',
+                            variant:
+                                MyTextVariant.bodyMuted, // negro atenuado, 13
+                          ),
+                          onTap: () {
+                            // Manejar selección del lugar
+                            debugPrint('Seleccionado: ${s['address']}');
+                            // TODO: pasar coordenadas a tu mapa:
+                            // final coords = s['coordinates']; // [lng, lat]
+                          },
+                        ),
+                        Divider(height: 1, color: Colors.grey[300]),
+                      ],
                     ),
                   ),
+                ],
               ],
             ),
           ),
