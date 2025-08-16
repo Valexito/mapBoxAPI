@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/modules/core/pages/configure_profile_page.dart';
+// ⬇️ dialog we define below
+import 'package:mapbox_api/modules/auth/components/change_password_dialog.dart';
+import 'package:mapbox_api/modules/auth/components/change_password_dialog.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,7 +25,6 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = _auth.currentUser;
     final photoUrl = user?.photoURL;
     final name = user?.displayName?.trim();
-    final email = user?.email ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
@@ -30,7 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              // ===== HEADER (igual que LoginPage) =====
+              // ===== HEADER (gradiente como login) =====
               Container(
                 height: headerHeight,
                 width: double.infinity,
@@ -79,8 +82,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       variant: MyTextVariant.title,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
-
                     const SizedBox(height: 12),
 
                     // Botón pequeño "Editar perfil"
@@ -97,7 +98,12 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           onPressed: () {
-                            // TODO: Navegar a edición de perfil
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ConfigureProfilePage(),
+                              ),
+                            );
                           },
                           icon: const Icon(Icons.edit, size: 18),
                           label: const Text('Edit Profile'),
@@ -107,8 +113,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // ===== CARD con opciones (igual lenguaje visual del LoginPage) =====
+
+              // ===== CARD con opciones =====
               Transform.translate(
                 offset: const Offset(0, -34),
                 child: Padding(
@@ -121,43 +127,59 @@ class _ProfilePageState extends State<ProfilePage> {
                       padding: const EdgeInsets.fromLTRB(12, 14, 12, 18),
                       child: Column(
                         children: [
-                          const _SettingsTile(
+                          _SettingsTile(
                             icon: Icons.person_outline,
                             label: 'Configure Profile',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ConfigureProfilePage(),
+                                ),
+                              );
+                            },
                           ),
                           const _DividerInset(),
-                          const _SettingsTile(
+
+                          _SettingsTile(
                             icon: Icons.lock_outline,
                             label: 'Change Password',
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => const ChangePasswordDialog(),
+                              );
+                            },
                           ),
                           const _DividerInset(),
+
                           const _SettingsTile(
                             icon: Icons.bookmark_outline,
                             label: 'View Reservations',
                           ),
                           const _DividerInset(),
+
                           const _SettingsTile(
                             icon: Icons.business_outlined,
                             label: 'Become a Provider',
                           ),
                           const _DividerInset(),
+
                           const _SettingsTile(
                             icon: Icons.notifications_none,
                             label: 'Display & Notifications',
                           ),
                           const _DividerInset(),
-                          // Logout destacado al final
+
                           _SettingsTile(
                             icon: Icons.logout,
                             label: 'Logout',
-                            iconColor: Colors.red.shade400,
-                            labelColor: Colors.red.shade400,
+                            iconColor: Colors.red,
+                            labelColor: Colors.red,
                             onTap: () async {
                               await _auth.signOut();
                               if (!mounted) return;
                               Navigator.of(context).popUntil((r) => r.isFirst);
-                              // O navega a tu AuthPage si la tienes:
-                              // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuthPage()));
                             },
                           ),
                         ],
@@ -195,6 +217,18 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tileBg = Color(0xFFF7F7F9);
+    final labelWidget =
+        labelColor == null
+            ? MyText(text: label, variant: MyTextVariant.normal, fontSize: 14)
+            : Text(
+              label,
+              style: TextStyle(
+                color: labelColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            );
+
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap ?? () {},
@@ -217,15 +251,7 @@ class _SettingsTile extends StatelessWidget {
               child: Icon(icon, color: iconColor ?? const Color(0xFF1B3A57)),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: MyText(
-                text: label,
-                variant: MyTextVariant.normal,
-                fontSize: 14,
-                // permite override de color cuando es "Logout"
-                customColor: Colors.blue,
-              ),
-            ),
+            Expanded(child: labelWidget),
             const Icon(Icons.chevron_right, color: Color(0xFF9AA3AF)),
           ],
         ),
