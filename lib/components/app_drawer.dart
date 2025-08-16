@@ -24,9 +24,32 @@ class AppDrawer extends StatelessWidget {
     }
   }
 
+  // ---- Helper: mejor URL de foto (incluye providerData y upscaling de Google) ----
+  String? _bestPhotoUrl(User? u) {
+    if (u == null) return null;
+    String? url = u.photoURL;
+
+    if (url == null || url.isEmpty) {
+      for (final p in u.providerData) {
+        if (p.photoURL != null && p.photoURL!.isNotEmpty) {
+          url = p.photoURL;
+          break;
+        }
+      }
+    }
+    if (url == null) return null;
+
+    // Subir resolución típica de Google (s96-c -> s200-c)
+    if (url.contains('googleusercontent.com') && url.contains('/s')) {
+      url = url.replaceFirst(RegExp(r'/s\d+-'), '/s200-');
+    }
+    return url;
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final photoUrl = _bestPhotoUrl(user);
 
     return Drawer(
       child: Column(
@@ -44,6 +67,7 @@ class AppDrawer extends StatelessWidget {
             ),
             child: Column(
               children: [
+                // Avatar cuadrado redondeado con foto real
                 Container(
                   width: 84,
                   height: 84,
@@ -58,7 +82,26 @@ class AppDrawer extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.person, size: 44, color: Colors.grey),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child:
+                        (photoUrl != null)
+                            ? Image.network(
+                              photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (c, e, s) => const Icon(
+                                    Icons.person,
+                                    size: 44,
+                                    color: Colors.grey,
+                                  ),
+                            )
+                            : const Icon(
+                              Icons.person,
+                              size: 44,
+                              color: Colors.grey,
+                            ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 MyText(
@@ -67,11 +110,6 @@ class AppDrawer extends StatelessWidget {
                   fontSize: 16,
                 ),
                 const SizedBox(height: 2),
-                MyText(
-                  text: user?.email ?? '',
-                  variant: MyTextVariant.normal,
-                  fontSize: 12,
-                ),
               ],
             ),
           ),
@@ -79,7 +117,7 @@ class AppDrawer extends StatelessWidget {
           // ===== ITEMS (fondo blanco) =====
           Expanded(
             child: Container(
-              color: Colors.white, // ← fondo blanco solo en la zona de opciones
+              color: Colors.white,
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -128,7 +166,6 @@ class AppDrawer extends StatelessWidget {
                       // TODO: ir a configuraciones
                     },
                   ),
-
                   _DrawerItem(
                     icon: Icons.logout,
                     label: 'Cerrar sesión',

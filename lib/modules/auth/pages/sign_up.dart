@@ -20,6 +20,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   final _auth = FirebaseAuth.instance;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -195,7 +196,16 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
 
                   const SizedBox(height: 26),
-                  MyButton(onTap: _goToCompleteProfile, text: 'Sign Up'),
+
+                  MyButton(
+                    text: 'Sign Up',
+                    onTap: () async {
+                      debugPrint('SignUp tapped'); // <-- debe verse en consola
+                      final ok = _formKey.currentState?.validate() ?? true;
+                      if (!ok) return;
+                      await _goToCompleteProfile(); // <-- si hay error, lo verás en el catch
+                    },
+                  ),
                 ],
               ),
             ),

@@ -1,7 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/modules/core/pages/become_provider_page.dart';
+import 'package:mapbox_api/components/ui/my_text.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,107 +10,48 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final user = FirebaseAuth.instance.currentUser!;
-  String displayName = '';
-  String email = '';
-  String phone = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
-
-  Future<void> _loadUser() async {
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-    if (!mounted) return;
-    setState(() {
-      displayName =
-          (doc.data()?['name'] ?? user.displayName ?? 'Usuario').toString();
-      phone = (doc.data()?['phone'] ?? '').toString();
-      email = user.email ?? '';
-    });
-  }
+  final _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF1976D2);
-    const pageBg = Color(0xFFEFF4FF);
+    const headerHeight = 260.0;
+    const navyTop = Color(0xFF0D1B2A);
+    const navyBottom = Color(0xFF1B3A57);
+
+    final user = _auth.currentUser;
+    final photoUrl = user?.photoURL;
+    final name = user?.displayName?.trim();
+    final email = user?.email ?? '';
 
     return Scaffold(
-      backgroundColor: pageBg,
+      backgroundColor: const Color(0xFFF2F4F7),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              // ==== HEADER ====
+              // ===== HEADER (igual que LoginPage) =====
               Container(
+                height: headerHeight,
                 width: double.infinity,
-                padding: const EdgeInsets.only(top: 12, left: 8, right: 8),
                 decoration: const BoxDecoration(
-                  color: Color.fromARGB(255, 21, 98, 176),
-                  borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(28),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [navyTop, navyBottom],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // fila de back + Edit Profile
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BecomeProviderPage(),
-                              ),
-                            );
-                          },
-                          child: const Text('Edit Profile'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
                     // Avatar
                     Container(
-                      width: 86,
-                      height: 86,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: [
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: const [
                           BoxShadow(
                             color: Colors.black26,
                             blurRadius: 8,
@@ -120,117 +60,114 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                       child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/parking_logo.png',
-                          fit: BoxFit.cover,
-                        ),
+                        child:
+                            photoUrl != null
+                                ? Image.network(photoUrl, fit: BoxFit.cover)
+                                : Container(
+                                  color: Colors.white,
+                                  child: const Icon(
+                                    Icons.person,
+                                    size: 48,
+                                    color: navyBottom,
+                                  ),
+                                ),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    MyText(
+                      text: (name?.isNotEmpty ?? false) ? name! : 'Tu nombre',
+                      variant: MyTextVariant.title,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'ID: ${user.uid.substring(0, 8)}',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
-                        fontSize: 12,
+
+                    const SizedBox(height: 12),
+
+                    // Botón pequeño "Editar perfil"
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: SizedBox(
+                        height: 38,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            // TODO: Navegar a edición de perfil
+                          },
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Edit Profile'),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
-
-              // ==== CARD BLANCA SUPERPUESTA ====
+              const SizedBox(height: 12),
+              // ===== CARD con opciones (igual lenguaje visual del LoginPage) =====
               Transform.translate(
-                offset: const Offset(0, -32),
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(
-                    top: 0,
-                    left: 16,
-                    right: 16,
-                    bottom: 16,
-                  ),
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                  decoration: BoxDecoration(
+                offset: const Offset(0, -34),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Material(
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(22),
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22000000),
-                        blurRadius: 16,
-                        offset: Offset(0, 6),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 14, 12, 18),
+                      child: Column(
+                        children: [
+                          const _SettingsTile(
+                            icon: Icons.person_outline,
+                            label: 'Configure Profile',
+                          ),
+                          const _DividerInset(),
+                          const _SettingsTile(
+                            icon: Icons.lock_outline,
+                            label: 'Change Password',
+                          ),
+                          const _DividerInset(),
+                          const _SettingsTile(
+                            icon: Icons.bookmark_outline,
+                            label: 'View Reservations',
+                          ),
+                          const _DividerInset(),
+                          const _SettingsTile(
+                            icon: Icons.business_outlined,
+                            label: 'Become a Provider',
+                          ),
+                          const _DividerInset(),
+                          const _SettingsTile(
+                            icon: Icons.notifications_none,
+                            label: 'Display & Notifications',
+                          ),
+                          const _DividerInset(),
+                          // Logout destacado al final
+                          _SettingsTile(
+                            icon: Icons.logout,
+                            label: 'Logout',
+                            iconColor: Colors.red.shade400,
+                            labelColor: Colors.red.shade400,
+                            onTap: () async {
+                              await _auth.signOut();
+                              if (!mounted) return;
+                              Navigator.of(context).popUntil((r) => r.isFirst);
+                              // O navega a tu AuthPage si la tienes:
+                              // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuthPage()));
+                            },
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _SectionTile(
-                        icon: Icons.lock_outline,
-                        label: 'Password',
-                        onTap: () {
-                          // TODO: navegar a cambio de contraseña
-                        },
-                      ),
-                      _SectionTile(
-                        icon: Icons.mail_outline,
-                        label: 'Email Address',
-                        subtitle: email,
-                        onTap: () {
-                          // TODO: editar email
-                        },
-                      ),
-                      _SectionTile(
-                        icon: Icons.fingerprint,
-                        label: 'Fingerprint',
-                        onTap: () {
-                          // TODO: activar biométrico
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _SectionTile(
-                        icon: Icons.support_agent_outlined,
-                        label: 'Support',
-                        filled: true,
-                        onTap: () {
-                          // TODO: abrir soporte
-                        },
-                      ),
-                      _SectionTile(
-                        icon: Icons.logout,
-                        label: 'Sign Out',
-                        filled: true,
-                        onTap: () async {
-                          await FirebaseAuth.instance.signOut();
-                          if (context.mounted) {
-                            Navigator.of(context).popUntil((r) => r.isFirst);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const BecomeProviderPage(),
-                            ),
-                          );
-                        },
-                        child: const Text('Volverse proveedor...'),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -239,63 +176,72 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-/// Tile redondeado estilo “card” con icono y chevron
-class _SectionTile extends StatelessWidget {
+/// Tile de ajustes con el mismo “feeling” de tus inputs/btns:
+class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String? subtitle;
-  final bool filled;
   final VoidCallback? onTap;
+  final Color? iconColor;
+  final Color? labelColor;
 
-  const _SectionTile({
+  const _SettingsTile({
     required this.icon,
     required this.label,
-    this.subtitle,
-    this.filled = false,
     this.onTap,
+    this.iconColor,
+    this.labelColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = filled ? const Color(0xFFF4F7FE) : Colors.white;
-    final border = filled ? Colors.transparent : const Color(0xFFE6ECF7);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border),
-        boxShadow: [
-          if (!filled)
-            const BoxShadow(
-              color: Color(0x11000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-        ],
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF2FF),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.apps,
-            color: Color(0xFF1976D2),
-          ), // se reemplaza abajo
+    const tileBg = Color(0xFFF7F7F9);
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap ?? () {},
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: tileBg,
+          borderRadius: BorderRadius.circular(16),
         ),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle:
-            subtitle == null
-                ? null
-                : Text(subtitle!, style: const TextStyle(fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: iconColor ?? const Color(0xFF1B3A57)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: MyText(
+                text: label,
+                variant: MyTextVariant.normal,
+                fontSize: 14,
+                // permite override de color cuando es "Logout"
+                customColor: Colors.blue,
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF9AA3AF)),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _DividerInset extends StatelessWidget {
+  const _DividerInset();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 6),
+      child: Divider(height: 1),
     );
   }
 }

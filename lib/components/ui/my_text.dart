@@ -15,6 +15,7 @@ class MyText extends StatelessWidget {
   final TextAlign? textAlign;
   final TextDecoration? decoration;
   final double? fontSize; // permite ajustar tamaño puntual
+  final Color? customColor; // <<-- sobrescribe el color
 
   const MyText({
     super.key,
@@ -23,6 +24,7 @@ class MyText extends StatelessWidget {
     this.textAlign,
     this.decoration,
     this.fontSize,
+    this.customColor,
   });
 
   @override
@@ -88,7 +90,10 @@ class MyText extends StatelessWidget {
     return Text(
       variant == MyTextVariant.title ? text.toUpperCase() : text,
       textAlign: textAlign,
-      style: style.copyWith(decoration: decoration ?? TextDecoration.none),
+      style: style.copyWith(
+        color: customColor ?? style.color, // <<-- sobrescribe si se pasa
+        decoration: decoration ?? TextDecoration.none,
+      ),
     );
   }
 }
