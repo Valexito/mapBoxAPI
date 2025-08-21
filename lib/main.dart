@@ -3,10 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:mapbox_api/modules/core/pages/home_page.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
 import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
-import 'package:mapbox_api/modules/user_parking/pages/map_navigation_page.dart';
-import 'package:mapbox_api/modules/user_parking/widgets/route_view_page_wrapper.dart';
-import 'modules/user_parking/firebase_options.dart';
-import 'package:mapbox_api/modules/core/pages/become_provider_page.dart';
+import 'package:mapbox_api/modules/reservations/pages/map_navigation_page.dart';
+import 'package:mapbox_api/modules/reservations/widgets/route_view_page_wrapper.dart';
+import 'modules/reservations/firebase_options.dart';
+import 'package:mapbox_api/modules/provider/become_provider_page.dart';
 import 'package:mapbox_api/components/map_picker_page.dart';
 
 void main() async {

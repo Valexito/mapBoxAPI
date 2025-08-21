@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/modules/user_parking/services/geolocator.dart';
-import 'package:mapbox_api/modules/user_parking/services/parking_service.dart';
-import 'package:mapbox_api/modules/user_parking/models/parking.dart';
+import 'package:mapbox_api/modules/reservations/services/geolocator.dart';
+import 'package:mapbox_api/modules/reservations/services/parking_service.dart';
+import 'package:mapbox_api/modules/reservations/models/parking.dart';
 import 'package:mapbox_api/modules/core/widgets/home_bottom_parking_details.dart';
 
 const MAP_BOX_ACCESS_TOKEN =

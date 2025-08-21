@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/modules/core/pages/configure_profile_page.dart';
+import 'package:mapbox_api/modules/user/configure_profile_page.dart';
 // ⬇️ dialog we define below
-import 'package:mapbox_api/modules/auth/components/change_password_dialog.dart';
-import 'package:mapbox_api/modules/auth/components/change_password_dialog.dart';
+import 'package:mapbox_api/modules/auth/components/reset_passwod_dialog.dart';
+import 'package:mapbox_api/modules/auth/components/reset_passwod_dialog.dart';
+import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
+import 'package:mapbox_api/modules/provider/become_provider_page.dart';
+import 'package:mapbox_api/modules/user/notifications_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -147,27 +150,50 @@ class _ProfilePageState extends State<ProfilePage> {
                             onTap: () {
                               showDialog(
                                 context: context,
-                                builder: (_) => const ChangePasswordDialog(),
+                                builder: (_) => const ResetPasswordDialog(),
                               );
                             },
                           ),
                           const _DividerInset(),
 
-                          const _SettingsTile(
+                          _SettingsTile(
                             icon: Icons.bookmark_outline,
                             label: 'View Reservations',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ReservationsPage(),
+                                ),
+                              );
+                            },
                           ),
                           const _DividerInset(),
 
-                          const _SettingsTile(
+                          _SettingsTile(
                             icon: Icons.business_outlined,
                             label: 'Become a Provider',
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => const BecomeProviderPage(),
+                              );
+                            },
                           ),
                           const _DividerInset(),
 
-                          const _SettingsTile(
+                          _SettingsTile(
                             icon: Icons.notifications_none,
                             label: 'Display & Notifications',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationsPage(),
+                                ),
+                              );
+                            },
                           ),
                           const _DividerInset(),
 

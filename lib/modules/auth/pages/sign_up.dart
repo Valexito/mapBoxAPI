@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
-import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
+import 'package:mapbox_api/modules/user/complete_profile_page.dart';
 
 class SignUpPage extends StatefulWidget {
   final VoidCallback showLoginPage;

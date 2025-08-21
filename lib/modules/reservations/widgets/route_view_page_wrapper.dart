@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/modules/user_parking/pages/route_view_page.dart';
+import 'package:mapbox_api/modules/reservations/pages/route_view_page.dart';
 
 class RouteViewPageWrapper extends StatelessWidget {
   const RouteViewPageWrapper({super.key});

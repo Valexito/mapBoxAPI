@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/modules/core/pages/home_page.dart';
-import 'package:mapbox_api/modules/auth/pages/complete_profile_page.dart';
+import 'package:mapbox_api/modules/user/complete_profile_page.dart';
 import 'package:mapbox_api/modules/auth/pages/login_page.dart';
 import 'package:mapbox_api/modules/auth/pages/sign_up.dart';
 import 'package:mapbox_api/modules/auth/pages/splash_screen.dart';
