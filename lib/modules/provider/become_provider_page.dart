@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
+import 'package:mapbox_api/modules/core/pages/map_pick_page.dart';
+import 'package:mapbox_api/modules/reservations/services/parking_service.dart';
 
 class BecomeProviderPage extends StatefulWidget {
   const BecomeProviderPage({super.key});
-
   @override
   State<BecomeProviderPage> createState() => _BecomeProviderPageState();
 }
@@ -27,16 +29,15 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
 
   bool _accept = false;
   bool _sending = false;
+  LatLng? _picked; // 👈 ubicación elegida
 
   @override
   void initState() {
     super.initState();
-    // Prefill con el usuario logueado
     final user = _auth.currentUser;
     if (user != null) {
       _email.text = user.email ?? '';
-      _phone.text =
-          ''; // si guardas phone en Firestore/Perfil podrías prefill aquí
+      _phone.text = '';
     }
   }
 
@@ -68,23 +69,34 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
     );
   }
 
+  Future<void> _pickOnMap() async {
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(builder: (_) => const MapPickPage()),
+    );
+    if (result != null) {
+      setState(() => _picked = result);
+    }
+  }
+
   Future<void> _submit() async {
     final ok = _formKey.currentState?.validate() ?? false;
     if (!ok) return;
-    if (!_accept) {
-      _showError('Debes aceptar los términos para continuar.');
-      return;
-    }
+    if (!_accept)
+      return _showError('Debes aceptar los términos para continuar.');
 
     final cap = int.tryParse(_capacity.text.trim());
-    if (cap == null || cap <= 0) {
-      _showError('Capacidad debe ser un número entero mayor a 0.');
-      return;
-    }
+    if (cap == null || cap <= 0)
+      return _showError('Capacidad debe ser un número > 0.');
+    if (_picked == null)
+      return _showError('Selecciona la ubicación del parqueo en el mapa.');
 
     setState(() => _sending = true);
     try {
       final uid = _auth.currentUser?.uid;
+      if (uid == null) return _showError('Debes iniciar sesión.');
+
+      // (Opcional) solicitud para tu pipeline
       await _db.collection('provider_applications').add({
         'uid': uid,
         'companyName': _companyName.text.trim(),
@@ -94,9 +106,20 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
         'address': _address.text.trim(),
         'capacity': cap,
         'description': _description.text.trim(),
-        'status': 'pending',
+        'status': 'approved', // usa 'pending' si vas a revisar manualmente
         'createdAt': Timestamp.now(),
       });
+
+      // ✅ crear parking (aparecerá en el mapa)
+      await ParkingService().createParking(
+        ownerID: uid,
+        name: _parkingName.text.trim(),
+        lat: _picked!.latitude,
+        lng: _picked!.longitude,
+        spaces: cap,
+        descripcion: _description.text.trim(),
+        price: 0, // puedes añadir un campo en el form si lo necesitas
+      );
 
       if (!mounted) return;
       showDialog(
@@ -107,20 +130,18 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
               title: const MyText(
-                text: 'Solicitud enviada',
+                text: '¡Listo!',
                 variant: MyTextVariant.title,
               ),
               content: const MyText(
-                text:
-                    'Hemos recibido tu solicitud para convertirte en proveedor. '
-                    'Te notificaremos cuando sea revisada.',
+                text: 'Tu parqueo fue creado y aparecerá en el mapa.',
                 variant: MyTextVariant.body,
               ),
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context); // cierra dialog
-                    Navigator.pop(context); // vuelve a la pantalla anterior
+                    Navigator.pop(context);
+                    Navigator.pop(context);
                   },
                   child: const Text('Aceptar'),
                 ),
@@ -128,7 +149,7 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
             ),
       );
     } catch (e) {
-      _showError('No se pudo enviar la solicitud. $e');
+      _showError('No se pudo completar el registro. $e');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -158,15 +179,13 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 6),
                     const MyText(
-                      text:
-                          'Completa tus datos para solicitar la verificación como proveedor.',
+                      text: 'Completa tus datos para registrar tu parqueo.',
                       variant: MyTextVariant.bodyMuted,
                       textAlign: TextAlign.center,
                       fontSize: 13,
                     ),
                     const SizedBox(height: 24),
 
-                    // Company Name
                     const MyText(
                       text: 'Company Name',
                       variant: MyTextVariant.normal,
@@ -182,7 +201,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Parking Name
                     const MyText(
                       text: 'Parking Name',
                       variant: MyTextVariant.normal,
@@ -198,7 +216,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Email
                     const MyText(
                       text: 'Email',
                       variant: MyTextVariant.normal,
@@ -215,7 +232,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Phone
                     const MyText(
                       text: 'Mobile Number',
                       variant: MyTextVariant.normal,
@@ -232,7 +248,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Address
                     const MyText(
                       text: 'Address',
                       variant: MyTextVariant.normal,
@@ -248,7 +263,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Capacity
                     const MyText(
                       text: 'Capacity (spaces)',
                       variant: MyTextVariant.normal,
@@ -265,7 +279,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Description
                     const MyText(
                       text: 'Description',
                       variant: MyTextVariant.normal,
@@ -274,14 +287,42 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     const SizedBox(height: 6),
                     MyTextField(
                       controller: _description,
-                      hintText: 'Short description of your parking (optional)',
+                      hintText: 'Short description (optional)',
                       prefixIcon: Icons.notes_outlined,
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 16),
 
-                    // Terms
+                    // Ubicación
+                    const MyText(
+                      text: 'Ubicación del parqueo',
+                      variant: MyTextVariant.normal,
+                      fontSize: 13,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickOnMap,
+                            icon: const Icon(Icons.map_outlined),
+                            label: const Text('Elegir en el mapa'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    MyText(
+                      text:
+                          _picked == null
+                              ? 'Sin ubicación seleccionada'
+                              : 'Lat: ${_picked!.latitude.toStringAsFixed(6)}, Lng: ${_picked!.longitude.toStringAsFixed(6)}',
+                      variant: MyTextVariant.bodyMuted,
+                      fontSize: 13,
+                    ),
+
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Checkbox(
@@ -301,16 +342,14 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Submit
                     _sending
                         ? const Center(child: CircularProgressIndicator())
-                        : MyButton(text: 'Send Request', onTap: _submit),
+                        : MyButton(text: 'Registrar parqueo', onTap: _submit),
                   ],
                 ),
               ),
             ),
 
-            // Close (igual que SignUp)
             Positioned(
               top: 10,
               right: 10,

@@ -6,8 +6,32 @@ class ParkingService {
 
   Future<List<Parking>> getAllParkings() async {
     final snapshot = await _firestore.collection('parking').get();
-    return snapshot.docs
-        .map((doc) => Parking.fromDoc(doc))
-        .toList(); // ✅ usa fromDoc
+    return snapshot.docs.map((d) => Parking.fromDoc(d)).toList();
+  }
+
+  Future<String> createParking({
+    required String ownerID,
+    required String name,
+    required double lat,
+    required double lng,
+    required int spaces,
+    String? descripcion,
+    int price = 0,
+    String? imageUrl,
+    String? localImagePath,
+  }) async {
+    final ref = await _firestore.collection('parking').add({
+      'ownerID': ownerID,
+      'name': name,
+      'lat': lat,
+      'lng': lng,
+      'spaces': spaces,
+      'price': price,
+      'descripcion': descripcion,
+      'imageUrl': imageUrl,
+      'localImagePath': localImagePath,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
   }
 }

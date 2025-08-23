@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'modules/reservations/firebase_options.dart';
+
 import 'package:mapbox_api/modules/core/pages/home_page.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
 import 'package:mapbox_api/modules/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/reservations/pages/map_navigation_page.dart';
 import 'package:mapbox_api/modules/reservations/widgets/route_view_page_wrapper.dart';
-import 'modules/reservations/firebase_options.dart';
 import 'package:mapbox_api/modules/provider/become_provider_page.dart';
 import 'package:mapbox_api/components/map_picker_page.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Evita [core/duplicate-app] si ya existe una instancia (auto-init o hot restart)
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   runApp(const MyApp());
 }
@@ -25,14 +32,13 @@ class MyApp extends StatelessWidget {
       title: 'Mapa con Parqueos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
-      initialRoute: '/auth', // puedes cambiarlo si usas login automático
+      initialRoute: '/auth',
       routes: {
         '/auth': (_) => const AuthPage(),
         '/homePage': (_) => const HomePage(),
         '/becomeProvider': (_) => const BecomeProviderPage(),
-        //from a user becoming a provider
         '/mapPicker': (_) => const MapPickerPage(),
-        '/routeView': (_) => const RouteViewPageWrapper(), // con args adentro
+        '/routeView': (_) => const RouteViewPageWrapper(),
         '/navigate': (_) => const MapNavigationPage(),
         '/reservationsPage': (_) => const ReservationsPage(),
       },

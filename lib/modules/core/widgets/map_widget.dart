@@ -1,4 +1,3 @@
-// lib/modules/core/widgets/map_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -12,7 +11,14 @@ const MAP_BOX_ACCESS_TOKEN =
     'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
 
 class MapWidget extends StatefulWidget {
-  const MapWidget({super.key});
+  const MapWidget({
+    super.key,
+    this.mapController,
+    this.onMapTap, // 👈 NUEVO
+  });
+
+  final MapController? mapController;
+  final VoidCallback? onMapTap; // 👈 NUEVO
 
   @override
   State<MapWidget> createState() => _MapWidgetState();
@@ -21,11 +27,12 @@ class MapWidget extends StatefulWidget {
 class _MapWidgetState extends State<MapWidget> {
   LatLng? currentPosition;
   List<Marker> _parkingMarkers = [];
-  final MapController _mapController = MapController();
+  late final MapController _mapController;
 
   @override
   void initState() {
     super.initState();
+    _mapController = widget.mapController ?? MapController();
     _loadCurrentLocation();
   }
 
@@ -42,47 +49,48 @@ class _MapWidgetState extends State<MapWidget> {
   }
 
   Future<void> _loadParkingMarkers() async {
-    final parkingService = ParkingService();
-    final parkings = await parkingService.getAllParkings();
-
-    final markers =
-        parkings.map((parking) {
-          return Marker(
-            point: LatLng(parking.lat, parking.lng),
-            width: 100,
-            height: 80,
-            child: GestureDetector(
-              onTap: () => _showParkingDetails(parking),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.directions_car_filled,
-                    color: Colors.blue,
-                    size: 30,
-                  ),
-                  Container(
-                    margin: const EdgeInsets.only(top: 2),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
+    final parkings = await ParkingService().getAllParkings();
+    setState(() {
+      _parkingMarkers =
+          parkings.map((p) {
+            return Marker(
+              point: LatLng(p.lat, p.lng),
+              width: 100,
+              height: 80,
+              child: GestureDetector(
+                onTap: () => _showParkingDetails(p),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.directions_car_filled,
+                      color: Colors.blue,
+                      size: 30,
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(221, 255, 255, 255),
-                      borderRadius: BorderRadius.circular(4),
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(221, 255, 255, 255),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        p.name,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: Colors.black,
+                        ),
+                      ),
                     ),
-                    child: Text(
-                      parking.name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 9, color: Colors.black),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        }).toList();
-
-    setState(() => _parkingMarkers = markers);
+            );
+          }).toList();
+    });
   }
 
   void _showParkingDetails(Parking parking) {
@@ -93,24 +101,20 @@ class _MapWidgetState extends State<MapWidget> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) {
-        bool? localFav; // null hasta que el stream responda
-
+        bool? localFav;
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return StreamBuilder<bool>(
               stream: FavoriteService.instance.isFavoriteStream(parking.id),
               builder: (context, snap) {
-                if (localFav == null) {
-                  localFav = snap.data ?? false;
-                }
+                if (localFav == null) localFav = snap.data ?? false;
                 final uiFav = localFav!;
-
                 return HomeParkingDetailBottomSheet(
                   parking: parking,
                   isFavorite: uiFav,
                   onToggleFavorite: () async {
                     final next = !uiFav;
-                    setSheetState(() => localFav = next); // flip inmediato
+                    setSheetState(() => localFav = next);
                     try {
                       if (next) {
                         await FavoriteService.instance.add(parking);
@@ -119,8 +123,8 @@ class _MapWidgetState extends State<MapWidget> {
                           parking.id,
                         );
                       }
-                    } catch (e) {
-                      setSheetState(() => localFav = !next); // revertir
+                    } catch (_) {
+                      setSheetState(() => localFav = !next);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -140,32 +144,17 @@ class _MapWidgetState extends State<MapWidget> {
   }
 
   // ===== Controles de cámara / zoom =====
-  void _zoomBy(double delta) {
-    final cam = _mapController.camera; // center & zoom actuales (flutter_map 6)
+  void zoomBy(double delta) {
+    final cam = _mapController.camera;
     final newZoom = (cam.zoom + delta).clamp(2.0, 20.0);
     _mapController.move(cam.center, newZoom.toDouble());
   }
 
-  void _centerOnUser() {
-    if (currentPosition != null) {
-      _mapController.move(currentPosition!, 16.0);
-    }
-  }
+  void centerOn(LatLng target, {double zoom = 16}) =>
+      _mapController.move(target, zoom);
 
-  Widget _roundCtrl(IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 3,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.all(10),
-          child: Icon(Icons.add, color: Colors.black), // placeholder
-        ),
-      ),
-    );
+  void centerOnUser() {
+    if (currentPosition != null) _mapController.move(currentPosition!, 16.0);
   }
 
   @override
@@ -182,6 +171,7 @@ class _MapWidgetState extends State<MapWidget> {
             options: MapOptions(
               initialCenter: currentPosition!,
               initialZoom: 16,
+              onTap: (_, __) => widget.onMapTap?.call(), // 👈 minimiza el panel
             ),
             children: [
               TileLayer(
@@ -211,62 +201,38 @@ class _MapWidgetState extends State<MapWidget> {
             ],
           ),
 
-          // ===== Controles flotantes: +  -  centrar =====
-          // Colocados por encima de la search bar (ajusta "bottom" si tu barra es más alta)
+          // Controles flotantes
           Positioned(
             right: 16,
-            bottom: 200, // ≈ encima del bottom search bar
+            bottom: 200,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Zoom +
-                Material(
-                  color: Colors.white,
-                  shape: const CircleBorder(),
-                  elevation: 3,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => _zoomBy(1),
-                    child: const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Icon(Icons.add, color: Colors.black),
-                    ),
-                  ),
-                ),
+                _roundBtn(icon: Icons.add, onTap: () => zoomBy(1)),
                 const SizedBox(height: 10),
-                // Zoom -
-                Material(
-                  color: Colors.white,
-                  shape: const CircleBorder(),
-                  elevation: 3,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => _zoomBy(-1),
-                    child: const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Icon(Icons.remove, color: Colors.black),
-                    ),
-                  ),
-                ),
+                _roundBtn(icon: Icons.remove, onTap: () => zoomBy(-1)),
                 const SizedBox(height: 10),
-                // Centrar cámara en usuario
-                Material(
-                  color: Colors.white,
-                  shape: const CircleBorder(),
-                  elevation: 3,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: _centerOnUser,
-                    child: const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Icon(Icons.my_location, color: Colors.black),
-                    ),
-                  ),
-                ),
+                _roundBtn(icon: Icons.my_location, onTap: centerOnUser),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _roundBtn({required IconData icon, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 3,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icon, color: Colors.black),
+        ),
       ),
     );
   }
