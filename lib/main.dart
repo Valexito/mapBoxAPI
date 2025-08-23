@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mapbox_api/modules/core/pages/home_page.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
-import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
+import 'package:mapbox_api/modules/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/reservations/pages/map_navigation_page.dart';
 import 'package:mapbox_api/modules/reservations/widgets/route_view_page_wrapper.dart';
 import 'modules/reservations/firebase_options.dart';

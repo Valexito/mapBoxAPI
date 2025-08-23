@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/reservations/pages/reserve_space_page.dart';
-import '../../reservations/models/parking.dart';
+import 'package:mapbox_api/modules/reservations/models/parking.dart';
 
 class HomeParkingDetailBottomSheet extends StatelessWidget {
   final Parking parking;
@@ -16,13 +16,9 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
     this.onToggleFavorite,
   });
 
-  static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
-  String _money(num v) {
-    // Q###.## sin localización compleja
-    return 'Q${v.toStringAsFixed(v % 1 == 0 ? 0 : 2)}';
-  }
+  String _money(num v) => 'Q${v.toStringAsFixed(v % 1 == 0 ? 0 : 2)}';
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +29,7 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ===== Imagen superior con overlay y acciones =====
+            // ===== Imagen + overlay + acciones =====
             Stack(
               children: [
                 SizedBox(
@@ -51,7 +47,6 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                             fit: BoxFit.cover,
                           ),
                 ),
-                // overlay para legibilidad
                 Positioned.fill(
                   child: Container(
                     decoration: const BoxDecoration(
@@ -68,10 +63,11 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                   right: 12,
                   child: Row(
                     children: [
+                      // Corazón: azul marino cuando está activo
                       _RoundIcon(
                         icon:
                             isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : navyBottom,
+                        color: isFavorite ? navyBottom : Colors.black38,
                         onTap: onToggleFavorite ?? () {},
                       ),
                       const SizedBox(width: 8),
@@ -105,8 +101,6 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                       fontSize: 14,
                     ),
                   const SizedBox(height: 12),
-
-                  // Precio / Rating
                   Row(
                     children: [
                       MyText(
@@ -128,7 +122,6 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
                   MyText(
                     text: 'Espacios disponibles: ${parking.spaces}',
@@ -136,24 +129,10 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
                     fontSize: 14,
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
                   const Divider(height: 1),
-                  /*
-                  // Amenidades/opcional (se muestran si existen)
-                  if (parking.amenities != null && parking.amenities!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: parking.amenities!
-                          .map((a) => _AmenityChip(label: a))
-                          .toList(),
-                    ),
-                  ],
-  */
                   const SizedBox(height: 18),
 
-                  // CTA – usa tu MyButton para mantener el tema
                   MyButton(
                     text: 'Reservar espacio',
                     onTap: () {
@@ -176,7 +155,6 @@ class HomeParkingDetailBottomSheet extends StatelessWidget {
   }
 }
 
-/// Botón redondo consistente con el tema
 class _RoundIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -201,32 +179,6 @@ class _RoundIcon extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Icon(icon, color: color, size: 22),
         ),
-      ),
-    );
-  }
-}
-
-/// Chip simple para amenidades (opcional)
-class _AmenityChip extends StatelessWidget {
-  final String label;
-  const _AmenityChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    const navy = Color(0xFF1B3A57);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle_outline, size: 16, color: navy),
-          const SizedBox(width: 6),
-          MyText(text: label, variant: MyTextVariant.body, fontSize: 12),
-        ],
       ),
     );
   }

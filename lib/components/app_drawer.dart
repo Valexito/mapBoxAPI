@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';
-import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
+import 'package:mapbox_api/modules/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/core/pages/favorites_page.dart';
-import 'package:mapbox_api/modules/core/pages/profile_page.dart';
+import 'package:mapbox_api/modules/user/profile_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});

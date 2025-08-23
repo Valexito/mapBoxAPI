@@ -5,7 +5,7 @@ import 'package:mapbox_api/modules/user/configure_profile_page.dart';
 // ⬇️ dialog we define below
 import 'package:mapbox_api/modules/auth/components/reset_passwod_dialog.dart';
 import 'package:mapbox_api/modules/auth/components/reset_passwod_dialog.dart';
-import 'package:mapbox_api/modules/core/pages/reservations_page.dart';
+import 'package:mapbox_api/modules/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/modules/provider/become_provider_page.dart';
 import 'package:mapbox_api/modules/user/notifications_page.dart';
 

@@ -1,10 +1,12 @@
+// lib/modules/core/widgets/map_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mapbox_api/modules/core/services/favorite_service.dart';
+import 'package:mapbox_api/modules/core/widgets/home_bottom_parking_details.dart';
 import 'package:mapbox_api/modules/reservations/services/geolocator.dart';
 import 'package:mapbox_api/modules/reservations/services/parking_service.dart';
 import 'package:mapbox_api/modules/reservations/models/parking.dart';
-import 'package:mapbox_api/modules/core/widgets/home_bottom_parking_details.dart';
 
 const MAP_BOX_ACCESS_TOKEN =
     'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
@@ -30,15 +32,11 @@ class _MapWidgetState extends State<MapWidget> {
   Future<void> _loadCurrentLocation() async {
     try {
       final location = await getCurrentLocation();
-      setState(() {
-        currentPosition = location;
-      });
+      setState(() => currentPosition = location);
       _loadParkingMarkers();
     } catch (e) {
       debugPrint('Error obteniendo ubicación: $e');
-      setState(() {
-        currentPosition = LatLng(14.834999, -91.518669); // fallback en Xela
-      });
+      setState(() => currentPosition = LatLng(14.834999, -91.518669));
       _loadParkingMarkers();
     }
   }
@@ -46,7 +44,7 @@ class _MapWidgetState extends State<MapWidget> {
   Future<void> _loadParkingMarkers() async {
     final parkingService = ParkingService();
     final parkings = await parkingService.getAllParkings();
-    print('Parqueos obtenidos: ${parkings.length}');
+
     final markers =
         parkings.map((parking) {
           return Marker(
@@ -69,13 +67,13 @@ class _MapWidgetState extends State<MapWidget> {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black87,
+                      color: const Color.fromARGB(221, 255, 255, 255),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       parking.name,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 9, color: Colors.white),
+                      style: const TextStyle(fontSize: 9, color: Colors.black),
                     ),
                   ),
                 ],
@@ -84,18 +82,89 @@ class _MapWidgetState extends State<MapWidget> {
           );
         }).toList();
 
-    setState(() {
-      _parkingMarkers = markers;
-    });
+    setState(() => _parkingMarkers = markers);
   }
 
   void _showParkingDetails(Parking parking) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => HomeParkingDetailBottomSheet(parking: parking),
+      builder: (_) {
+        bool? localFav; // null hasta que el stream responda
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return StreamBuilder<bool>(
+              stream: FavoriteService.instance.isFavoriteStream(parking.id),
+              builder: (context, snap) {
+                if (localFav == null) {
+                  localFav = snap.data ?? false;
+                }
+                final uiFav = localFav!;
+
+                return HomeParkingDetailBottomSheet(
+                  parking: parking,
+                  isFavorite: uiFav,
+                  onToggleFavorite: () async {
+                    final next = !uiFav;
+                    setSheetState(() => localFav = next); // flip inmediato
+                    try {
+                      if (next) {
+                        await FavoriteService.instance.add(parking);
+                      } else {
+                        await FavoriteService.instance.removeByParkingId(
+                          parking.id,
+                        );
+                      }
+                    } catch (e) {
+                      setSheetState(() => localFav = !next); // revertir
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('No se pudo actualizar favoritos'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ===== Controles de cámara / zoom =====
+  void _zoomBy(double delta) {
+    final cam = _mapController.camera; // center & zoom actuales (flutter_map 6)
+    final newZoom = (cam.zoom + delta).clamp(2.0, 20.0);
+    _mapController.move(cam.center, newZoom.toDouble());
+  }
+
+  void _centerOnUser() {
+    if (currentPosition != null) {
+      _mapController.move(currentPosition!, 16.0);
+    }
+  }
+
+  Widget _roundCtrl(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 3,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(Icons.add, color: Colors.black), // placeholder
+        ),
+      ),
     );
   }
 
@@ -142,19 +211,59 @@ class _MapWidgetState extends State<MapWidget> {
             ],
           ),
 
-          // 🔄 Botón para reposicionar la cámara
+          // ===== Controles flotantes: +  -  centrar =====
+          // Colocados por encima de la search bar (ajusta "bottom" si tu barra es más alta)
           Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              backgroundColor: Colors.white,
-              shape: const CircleBorder(),
-              onPressed: () {
-                if (currentPosition != null) {
-                  _mapController.move(currentPosition!, 16);
-                }
-              },
-              child: const Icon(Icons.my_location, color: Colors.black),
+            right: 16,
+            bottom: 200, // ≈ encima del bottom search bar
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Zoom +
+                Material(
+                  color: Colors.white,
+                  shape: const CircleBorder(),
+                  elevation: 3,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _zoomBy(1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Icon(Icons.add, color: Colors.black),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Zoom -
+                Material(
+                  color: Colors.white,
+                  shape: const CircleBorder(),
+                  elevation: 3,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _zoomBy(-1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Icon(Icons.remove, color: Colors.black),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Centrar cámara en usuario
+                Material(
+                  color: Colors.white,
+                  shape: const CircleBorder(),
+                  elevation: 3,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _centerOnUser,
+                    child: const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Icon(Icons.my_location, color: Colors.black),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

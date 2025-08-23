@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Parking {
+  final String id;
   final double lat;
   final double lng;
   final String name;
@@ -7,40 +10,67 @@ class Parking {
   final int spaces;
   final double? rating;
   final double? originalPrice;
-  final String? imageUrl; // para Firebase (nube)
-  final String? localImagePath; // para assets locales
+  final String? imageUrl; // nube
+  final String? localImagePath; // assets
   final String? descripcion;
-  final String id;
 
   Parking({
+    required this.id,
     required this.lat,
     required this.lng,
     required this.name,
     required this.ownerID,
     required this.price,
     required this.spaces,
-    this.originalPrice,
     this.rating,
+    this.originalPrice,
     this.imageUrl,
     this.localImagePath,
     this.descripcion,
-    required this.id,
   });
 
-  factory Parking.fromMap(Map<String, dynamic> data) {
+  // ✅ Construye desde Firestore conservando el doc.id
+  factory Parking.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? <String, dynamic>{};
+    double _d(dynamic v) =>
+        (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+
     return Parking(
-      id: 'id',
-      lat: data['lat'],
-      lng: data['lng'],
-      name: data['name'],
-      ownerID: data['ownerID'],
-      price: data['price'],
-      spaces: data['spaces'],
+      id: doc.id,
+      lat: _d(data['lat']),
+      lng: _d(data['lng']),
+      name: data['name'] ?? '',
+      ownerID: data['ownerID'] ?? '',
+      price: (data['price'] ?? 0) as int,
+      spaces: (data['spaces'] ?? 0) as int,
+      rating: data['rating'] == null ? null : _d(data['rating']),
+      originalPrice:
+          data['originalPrice'] == null ? null : _d(data['originalPrice']),
       imageUrl: data['imageUrl'],
       localImagePath: data['localImagePath'],
-      originalPrice: data['originalPrice']?.toDouble(),
-      rating: data['rating']?.toDouble(),
-      descripcion: data['descripcion'], // ✅ ahora sí la traes de Firestore
+      descripcion: data['descripcion'],
+    );
+  }
+
+  // (opcional) si alguna vez creas desde un map externo, EXIGE id
+  factory Parking.fromMap(Map<String, dynamic> data, {required String id}) {
+    double _d(dynamic v) =>
+        (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+
+    return Parking(
+      id: id,
+      lat: _d(data['lat']),
+      lng: _d(data['lng']),
+      name: data['name'] ?? '',
+      ownerID: data['ownerID'] ?? '',
+      price: (data['price'] ?? 0) as int,
+      spaces: (data['spaces'] ?? 0) as int,
+      rating: data['rating'] == null ? null : _d(data['rating']),
+      originalPrice:
+          data['originalPrice'] == null ? null : _d(data['originalPrice']),
+      imageUrl: data['imageUrl'],
+      localImagePath: data['localImagePath'],
+      descripcion: data['descripcion'],
     );
   }
 }

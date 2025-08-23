@@ -6,9 +6,8 @@ class ParkingService {
 
   Future<List<Parking>> getAllParkings() async {
     final snapshot = await _firestore.collection('parking').get();
-
-    return snapshot.docs.map((doc) {
-      return Parking.fromMap(doc.data());
-    }).toList();
+    return snapshot.docs
+        .map((doc) => Parking.fromDoc(doc))
+        .toList(); // ✅ usa fromDoc
   }
 }

@@ -2,47 +2,48 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/modules/core/services/favorite_service.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
-
   @override
   State<FavoritesPage> createState() => _FavoritesPageState();
 }
+
+enum FavFilter { all, rating45, cheapest, spaces }
 
 class _FavoritesPageState extends State<FavoritesPage> {
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
-  final _categories = const ['All', 'Centro', 'Norte', 'Sur', 'Oeste'];
-  String _selectedCat = 'All';
+  FavFilter _filter = FavFilter.all;
 
   Stream<List<_FavItem>> _streamFavorites() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
 
-    // Estructura esperada en Firestore (colección "favorites"):
-    // { userId, name, address, minutes, rating, imageUrl, category, discount }
     return FirebaseFirestore.instance
         .collection('favorites')
         .where('userId', isEqualTo: uid)
         .snapshots()
         .map(
-          (qs) =>
-              qs.docs.map((d) {
-                final m = d.data();
-                return _FavItem(
-                  id: d.id,
-                  name: m['name'] ?? 'Parking',
-                  address: m['address'] ?? '',
-                  minutes: (m['minutes'] ?? 10) as int,
-                  rating: (m['rating'] ?? 4.6).toDouble(),
-                  imageUrl: m['imageUrl'],
-                  category: m['category'] ?? 'All',
-                  discount: (m['discount'] ?? 0) as int,
-                );
-              }).toList(),
+          (qs) => qs.docs.map((d) => _FavItem.fromMap(d.id, d.data())).toList(),
         );
+  }
+
+  List<_FavItem> _applyFilter(List<_FavItem> items) {
+    switch (_filter) {
+      case FavFilter.rating45:
+        return items.where((e) => e.rating >= 4.5).toList()
+          ..sort((a, b) => b.rating.compareTo(a.rating));
+      case FavFilter.cheapest:
+        return [...items]..sort((a, b) => a.price.compareTo(b.price));
+      case FavFilter.spaces:
+        return items.where((e) => e.spaces > 0).toList();
+      case FavFilter.all:
+      default:
+        return items;
+    }
   }
 
   @override
@@ -54,7 +55,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // ===== HEADER (gradiente + back + título + buscador) =====
+            // ===== HEADER =====
             SizedBox(
               height: headerH,
               width: double.infinity,
@@ -88,22 +89,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  Positioned(
-                    right: 4,
-                    top: 0,
-                    bottom: 0,
-                    child: IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
-                      onPressed: () {
-                        // TODO: acción de búsqueda
-                      },
-                    ),
-                  ),
                 ],
               ),
             ),
 
-            // ===== CHIPS DE FILTRO =====
+            // ===== FILTER CHIPS =====
             Transform.translate(
               offset: const Offset(0, -20),
               child: Padding(
@@ -117,21 +107,40 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children:
-                            _categories
-                                .map(
-                                  (c) => Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: _FilterChip(
-                                      label: c,
-                                      selected: _selectedCat == c,
-                                      onTap:
-                                          () =>
-                                              setState(() => _selectedCat = c),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                        children: [
+                          _Chip(
+                            label: 'All',
+                            selected: _filter == FavFilter.all,
+                            onTap:
+                                () => setState(() => _filter = FavFilter.all),
+                          ),
+                          const SizedBox(width: 8),
+                          _Chip(
+                            label: 'Rating 4.5+',
+                            selected: _filter == FavFilter.rating45,
+                            onTap:
+                                () => setState(
+                                  () => _filter = FavFilter.rating45,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          _Chip(
+                            label: 'Cheapest',
+                            selected: _filter == FavFilter.cheapest,
+                            onTap:
+                                () => setState(
+                                  () => _filter = FavFilter.cheapest,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          _Chip(
+                            label: 'With spaces',
+                            selected: _filter == FavFilter.spaces,
+                            onTap:
+                                () =>
+                                    setState(() => _filter = FavFilter.spaces),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -139,37 +148,39 @@ class _FavoritesPageState extends State<FavoritesPage> {
               ),
             ),
 
-            // ===== LISTA =====
+            // ===== LIST =====
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -16),
                 child: StreamBuilder<List<_FavItem>>(
                   stream: _streamFavorites(),
                   builder: (context, snap) {
-                    final all = snap.data ?? _demoFavorites;
-                    final items =
-                        _selectedCat == 'All'
-                            ? all
-                            : all
-                                .where((e) => e.category == _selectedCat)
-                                .toList();
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snap.hasError) {
+                      return const Center(
+                        child: MyText(
+                          text: 'Error loading favorites',
+                          variant: MyTextVariant.body,
+                        ),
+                      );
+                    }
+
+                    final all = snap.data ?? const <_FavItem>[];
+                    final items = _applyFilter(all);
 
                     if (items.isEmpty) {
                       return const Center(
                         child: MyText(
-                          text: 'No hay favoritos aquí',
+                          text: 'No favorites yet',
                           variant: MyTextVariant.bodyMuted,
                         ),
                       );
                     }
 
                     return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(
-                        16,
-                        0,
-                        16,
-                        24 + 8,
-                      ), // aire
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                       itemCount: items.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => _FavoriteCard(item: items[i]),
@@ -185,11 +196,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 }
 
-class _FilterChip extends StatelessWidget {
+class _Chip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _FilterChip({
+  const _Chip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -228,7 +239,7 @@ class _FavoriteCard extends StatefulWidget {
 }
 
 class _FavoriteCardState extends State<_FavoriteCard> {
-  bool _fav = true; // ya está en favoritos
+  bool _fav = true;
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +261,8 @@ class _FavoriteCardState extends State<_FavoriteCard> {
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child:
-                      widget.item.imageUrl == null
+                      (widget.item.imageUrl == null ||
+                              widget.item.imageUrl!.isEmpty)
                           ? Container(color: const Color(0xFFE7ECF3))
                           : Image.network(
                             widget.item.imageUrl!,
@@ -258,26 +270,6 @@ class _FavoriteCardState extends State<_FavoriteCard> {
                           ),
                 ),
               ),
-              if (widget.item.discount > 0)
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: MyText(
-                      text: '${widget.item.discount}% OFF',
-                      variant: MyTextVariant.normal,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
               Positioned(
                 right: 10,
                 top: 10,
@@ -290,9 +282,24 @@ class _FavoriteCardState extends State<_FavoriteCard> {
                       _fav ? Icons.favorite : Icons.favorite_border,
                       color: _fav ? Colors.red : navy,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       setState(() => _fav = !_fav);
-                      // TODO: actualizar backend (add/remove favorito)
+                      try {
+                        if (!_fav) {
+                          await FavoriteService.instance.removeByDocId(
+                            widget.item.id,
+                          );
+                        }
+                      } catch (_) {
+                        setState(() => _fav = !_fav);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No se pudo actualizar favorito'),
+                            ),
+                          );
+                        }
+                      }
                     },
                   ),
                 ),
@@ -306,7 +313,6 @@ class _FavoriteCardState extends State<_FavoriteCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // nombre + rating
                 Row(
                   children: [
                     Expanded(
@@ -326,28 +332,33 @@ class _FavoriteCardState extends State<_FavoriteCard> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                // min + dirección
                 Row(
                   children: [
-                    const Icon(Icons.schedule, size: 16, color: navy),
+                    const Icon(Icons.attach_money, size: 16, color: navy),
                     const SizedBox(width: 6),
                     MyText(
-                      text: '${widget.item.minutes} min',
+                      text: 'Q${widget.item.price}',
                       variant: MyTextVariant.body,
                       fontSize: 13,
                     ),
                     const SizedBox(width: 12),
-                    const Icon(Icons.place_outlined, size: 16, color: navy),
+                    const Icon(Icons.local_parking, size: 16, color: navy),
                     const SizedBox(width: 6),
-                    Expanded(
-                      child: MyText(
-                        text: widget.item.address,
-                        variant: MyTextVariant.bodyMuted,
-                        fontSize: 12,
-                      ),
+                    MyText(
+                      text: 'Spaces: ${widget.item.spaces}',
+                      variant: MyTextVariant.bodyMuted,
+                      fontSize: 12,
                     ),
                   ],
                 ),
+                if ((widget.item.descripcion ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  MyText(
+                    text: widget.item.descripcion!,
+                    variant: MyTextVariant.bodyMuted,
+                    fontSize: 12,
+                  ),
+                ],
               ],
             ),
           ),
@@ -358,53 +369,45 @@ class _FavoriteCardState extends State<_FavoriteCard> {
 }
 
 class _FavItem {
-  final String id;
+  final String id; // favorites doc id (uid_parkingId)
   final String name;
-  final String address;
-  final int minutes;
+  final String ownerID;
+  final int price;
+  final int spaces;
   final double rating;
   final String? imageUrl;
-  final String category;
-  final int discount;
+  final String? descripcion;
+  final double lat;
+  final double lng;
 
-  _FavItem({
+  const _FavItem({
     required this.id,
     required this.name,
-    required this.address,
-    required this.minutes,
+    required this.ownerID,
+    required this.price,
+    required this.spaces,
     required this.rating,
-    required this.category,
+    required this.lat,
+    required this.lng,
     this.imageUrl,
-    this.discount = 0,
+    this.descripcion,
   });
-}
 
-// ===== DEMO =====
-final _demoFavorites = <_FavItem>[
-  _FavItem(
-    id: 'f1',
-    name: 'Parqueo Central',
-    address: '12 Av. Zona 3, Quetzaltenango',
-    minutes: 15,
-    rating: 4.9,
-    category: 'Centro',
-    discount: 10,
-  ),
-  _FavItem(
-    id: 'f2',
-    name: 'Shaddai Norte',
-    address: 'Calz. San José, Zona 6',
-    minutes: 20,
-    rating: 4.8,
-    category: 'Norte',
-    discount: 20,
-  ),
-  _FavItem(
-    id: 'f3',
-    name: 'Garage Alameda',
-    address: 'Alameda #27',
-    minutes: 8,
-    rating: 4.6,
-    category: 'Sur',
-  ),
-];
+  factory _FavItem.fromMap(String id, Map<String, dynamic> m) {
+    double _d(dynamic v) =>
+        (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+
+    return _FavItem(
+      id: id,
+      name: m['name'] ?? 'Parking',
+      ownerID: m['ownerID'] ?? '',
+      price: (m['price'] ?? 0) as int,
+      spaces: (m['spaces'] ?? 0) as int,
+      rating: _d(m['rating'] ?? 0),
+      imageUrl: m['imageUrl'],
+      descripcion: m['descripcion'],
+      lat: _d(m['lat'] ?? 0),
+      lng: _d(m['lng'] ?? 0),
+    );
+  }
+}
