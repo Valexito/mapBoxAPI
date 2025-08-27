@@ -1,48 +1,91 @@
+// android/app/build.gradle.kts
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
+    id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.dev.parking"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // Si no necesitas NDK, omite la línea. (Déjala comentada)
+    // ndkVersion = "27.0.12077973"
+
+    defaultConfig {
+        applicationId = "com.dev.parking" // Debe coincidir con google-services.json
+        minSdk = 23
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+        multiDexEnabled = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
-    defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.dev.parking"
-
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        jvmTarget = "11"
     }
 
     buildTypes {
+        // Debug: sin shrink, sin minify (más rápido)
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+
+        // Release: puedes activar shrink+minify (opcional)
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Si todavía no firmas release, usa firma de debug para poder compilar
             signingConfig = signingConfigs.getByName("debug")
+
+            // Activa optimización cuando estés listo
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    // Evita conflictos de META-INF cuando uses varias libs
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0"
+            )
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // BOM centraliza versiones de Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
+
+    // Solo lo que uses:
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+
+    // Otras (opcional)
+    // implementation("com.google.firebase:firebase-crashlytics")
+    // implementation("com.google.firebase:firebase-messaging")
+
+    // Multidex si tu app crece
+    implementation("androidx.multidex:multidex:2.0.1")
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'modules/reservations/firebase_options.dart';
+import 'package:mapbox_api/firebase_options.dart';
 
 import 'package:mapbox_api/modules/core/pages/home_page.dart';
 import 'package:mapbox_api/modules/auth/services/auth_page.dart';

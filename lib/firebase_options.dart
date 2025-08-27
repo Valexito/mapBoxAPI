@@ -53,10 +53,11 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCv4TpVe4JXurYd6uBeMMKutbnkajQd0qY',
-    appId: '1:85368638098:android:6a15241882fd728aebb44b',
-    messagingSenderId: '85368638098',
-    projectId: 'parking1-f05c7',
-    storageBucket: 'parking1-f05c7.firebasestorage.app',
+    apiKey: 'AIzaSyCRim1QwmDqdH20Cu-DdCRIVUQHpdiBMHs',
+    appId: '1:1000811558307:android:3d0a9d7c4bc0da6a6d1616',
+    messagingSenderId: '1000811558307',
+    projectId: 'parkingappprod',
+    storageBucket: 'parkingappprod.firebasestorage.app',
   );
+
 }
