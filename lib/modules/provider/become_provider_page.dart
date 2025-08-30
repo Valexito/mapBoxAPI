@@ -1,7 +1,12 @@
+// become_provider_page.dart
+import 'dart:typed_data'; // <- para Uint8List (preview de imágenes)
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
@@ -27,9 +32,13 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
   final _db = FirebaseFirestore.instance;
   final _formKey = GlobalKey<FormState>();
 
+  // ---- imágenes ----
+  final _picker = ImagePicker();
+  final List<XFile> _images = [];
+
   bool _accept = false;
   bool _sending = false;
-  LatLng? _picked; // 👈 ubicación elegida
+  LatLng? _picked; // ubicación elegida
 
   @override
   void initState() {
@@ -79,6 +88,24 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
     }
   }
 
+  Future<void> _pickImages() async {
+    final picked = await _picker.pickMultiImage(
+      imageQuality: 85, // compresión ligera
+      maxWidth: 1920, // evita originales enormes
+    );
+    if (picked.isNotEmpty) {
+      setState(() {
+        const maxTotal = 10;
+        final remaining = maxTotal - _images.length;
+        _images.addAll(picked.take(remaining));
+      });
+    }
+  }
+
+  void _removeImage(XFile img) {
+    setState(() => _images.remove(img));
+  }
+
   Future<void> _submit() async {
     final ok = _formKey.currentState?.validate() ?? false;
     if (!ok) return;
@@ -90,6 +117,8 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
       return _showError('Capacidad debe ser un número > 0.');
     if (_picked == null)
       return _showError('Selecciona la ubicación del parqueo en el mapa.');
+    if (_images.length < 3)
+      return _showError('Sube al menos 3 fotos del parqueo.');
 
     setState(() => _sending = true);
     try {
@@ -110,15 +139,16 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
         'createdAt': Timestamp.now(),
       });
 
-      // ✅ crear parking (aparecerá en el mapa)
-      await ParkingService().createParking(
+      // ✅ crear parking + subir imágenes (Storage + Firestore)
+      await ParkingService().createParkingWithImages(
         ownerID: uid,
         name: _parkingName.text.trim(),
         lat: _picked!.latitude,
         lng: _picked!.longitude,
         spaces: cap,
         descripcion: _description.text.trim(),
-        price: 0, // puedes añadir un campo en el form si lo necesitas
+        price: 0,
+        images: _images, // se suben a Storage y guarda URLs en Firestore
       );
 
       if (!mounted) return;
@@ -186,6 +216,7 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 24),
 
+                    // ---- campos ----
                     const MyText(
                       text: 'Company Name',
                       variant: MyTextVariant.normal,
@@ -292,9 +323,10 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
+
                     const SizedBox(height: 16),
 
-                    // Ubicación
+                    // ---- ubicación ----
                     const MyText(
                       text: 'Ubicación del parqueo',
                       variant: MyTextVariant.normal,
@@ -323,6 +355,75 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
 
                     const SizedBox(height: 16),
+
+                    // ---- fotos ----
+                    const MyText(
+                      text: 'Fotos del parqueo (mín. 3)',
+                      variant: MyTextVariant.normal,
+                      fontSize: 13,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final img in _images)
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: SizedBox(
+                                  width: 90,
+                                  height: 90,
+                                  child: FutureBuilder<Uint8List>(
+                                    future: img.readAsBytes(),
+                                    builder: (context, snap) {
+                                      if (snap.connectionState !=
+                                              ConnectionState.done ||
+                                          !snap.hasData) {
+                                        return Container(
+                                          color: const Color(0xFFE0E0E0),
+                                        );
+                                      }
+                                      return Image.memory(
+                                        snap.data!,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: -8,
+                                top: -8,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.cancel,
+                                    size: 20,
+                                    color: Colors.black54,
+                                  ),
+                                  onPressed: () => _removeImage(img),
+                                ),
+                              ),
+                            ],
+                          ),
+                        GestureDetector(
+                          onTap: _pickImages,
+                          child: Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade400),
+                            ),
+                            child: const Icon(Icons.add_a_photo_outlined),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
                     Row(
                       children: [
                         Checkbox(

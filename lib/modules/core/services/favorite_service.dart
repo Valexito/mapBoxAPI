@@ -1,3 +1,4 @@
+// lib/modules/core/services/favorite_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mapbox_api/modules/reservations/models/parking.dart';
@@ -15,26 +16,35 @@ class FavoriteService {
     return uid;
   }
 
-  // Un doc por (uid + parkingId) para evitar duplicados
   String _docId(String parkingId) => '${_uid}_$parkingId';
 
   Future<void> add(Parking p) async {
     if (p.id.isEmpty) throw ArgumentError('Parking.id must not be empty');
+
+    // Mejor imagen disponible (https), no usar gs://
+    final cover =
+        (p.photos.isNotEmpty ? p.photos.first : null) ??
+        p.coverUrl ??
+        p.imageUrl;
+
     final map = {
       'userId': _uid,
       'parkingId': p.id,
       'name': p.name,
       'ownerID': p.ownerID,
-      'price': p.price, // int
-      'spaces': p.spaces, // int
+      'price': p.price,
+      'spaces': p.spaces,
       'rating': (p.rating ?? 0).toDouble(),
-      'originalPrice': p.originalPrice, // double?
-      'imageUrl': p.imageUrl,
+      'originalPrice': p.originalPrice,
+      'imageUrl': p.imageUrl, // legacy
+      'coverUrl': cover, // portada que usará la UI
+      'photos': p.photos, // opcional
       'descripcion': p.descripcion,
-      'lat': p.lat, // double
-      'lng': p.lng, // double
+      'lat': p.lat,
+      'lng': p.lng,
       'updatedAt': FieldValue.serverTimestamp(),
     };
+
     await _col.doc(_docId(p.id)).set(map, SetOptions(merge: true));
   }
 

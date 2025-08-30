@@ -1,3 +1,4 @@
+// lib/modules/reservations/models/parking.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Parking {
@@ -10,9 +11,13 @@ class Parking {
   final int spaces;
   final double? rating;
   final double? originalPrice;
-  final String? imageUrl; // nube
+  final String? imageUrl; // legacy
   final String? localImagePath; // assets
   final String? descripcion;
+
+  // 👇 nuevos
+  final String? coverUrl; // portada
+  final List<String> photos; // galería
 
   Parking({
     required this.id,
@@ -27,13 +32,21 @@ class Parking {
     this.imageUrl,
     this.localImagePath,
     this.descripcion,
+    this.coverUrl,
+    this.photos = const [],
   });
 
-  // ✅ Construye desde Firestore conservando el doc.id
   factory Parking.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
     double _d(dynamic v) =>
         (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+    List<String> _ls(dynamic v) =>
+        (v is List)
+            ? v
+                .map((e) => e?.toString() ?? '')
+                .where((e) => e.isNotEmpty)
+                .toList()
+            : const <String>[];
 
     return Parking(
       id: doc.id,
@@ -43,19 +56,30 @@ class Parking {
       ownerID: data['ownerID'] ?? '',
       price: (data['price'] ?? 0) as int,
       spaces: (data['spaces'] ?? 0) as int,
-      rating: data['rating'] == null ? null : _d(data['rating']),
+      rating:
+          (data['rating'] is num) ? (data['rating'] as num).toDouble() : null,
       originalPrice:
-          data['originalPrice'] == null ? null : _d(data['originalPrice']),
+          (data['originalPrice'] is num)
+              ? (data['originalPrice'] as num).toDouble()
+              : null,
       imageUrl: data['imageUrl'],
       localImagePath: data['localImagePath'],
       descripcion: data['descripcion'],
+      coverUrl: data['coverUrl'],
+      photos: _ls(data['photos']),
     );
   }
 
-  // (opcional) si alguna vez creas desde un map externo, EXIGE id
   factory Parking.fromMap(Map<String, dynamic> data, {required String id}) {
     double _d(dynamic v) =>
         (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+    List<String> _ls(dynamic v) =>
+        (v is List)
+            ? v
+                .map((e) => e?.toString() ?? '')
+                .where((e) => e.isNotEmpty)
+                .toList()
+            : const <String>[];
 
     return Parking(
       id: id,
@@ -65,12 +89,17 @@ class Parking {
       ownerID: data['ownerID'] ?? '',
       price: (data['price'] ?? 0) as int,
       spaces: (data['spaces'] ?? 0) as int,
-      rating: data['rating'] == null ? null : _d(data['rating']),
+      rating:
+          (data['rating'] is num) ? (data['rating'] as num).toDouble() : null,
       originalPrice:
-          data['originalPrice'] == null ? null : _d(data['originalPrice']),
+          (data['originalPrice'] is num)
+              ? (data['originalPrice'] as num).toDouble()
+              : null,
       imageUrl: data['imageUrl'],
       localImagePath: data['localImagePath'],
       descripcion: data['descripcion'],
+      coverUrl: data['coverUrl'],
+      photos: _ls(data['photos']),
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/modules/core/services/favorite_service.dart';
+import 'package:mapbox_api/modules/reservations/models/parking.dart';
+import 'package:mapbox_api/modules/reservations/pages/reserve_space_page.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -244,125 +246,163 @@ class _FavoriteCardState extends State<_FavoriteCard> {
   @override
   Widget build(BuildContext context) {
     const navy = Color(0xFF1B3A57);
+    final heroImg =
+        widget.item.heroImage ??
+        'https://via.placeholder.com/800x450?text=Parking';
 
-    return Material(
-      elevation: 4,
-      color: Colors.white,
+    // 👉 Toda la tarjeta es clickeable y navega a ReserveSpacePage
+    return InkWell(
       borderRadius: BorderRadius.circular(18),
-      child: Column(
-        children: [
-          // Imagen + heart
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(18),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child:
-                      (widget.item.imageUrl == null ||
-                              widget.item.imageUrl!.isEmpty)
-                          ? Container(color: const Color(0xFFE7ECF3))
-                          : Image.network(
-                            widget.item.imageUrl!,
-                            fit: BoxFit.cover,
-                          ),
-                ),
-              ),
-              Positioned(
-                right: 10,
-                top: 10,
-                child: Material(
-                  color: Colors.white,
-                  shape: const CircleBorder(),
-                  elevation: 2,
-                  child: IconButton(
-                    icon: Icon(
-                      _fav ? Icons.favorite : Icons.favorite_border,
-                      color: _fav ? Colors.red : navy,
-                    ),
-                    onPressed: () async {
-                      setState(() => _fav = !_fav);
-                      try {
-                        if (!_fav) {
-                          await FavoriteService.instance.removeByDocId(
-                            widget.item.id,
-                          );
-                        }
-                      } catch (_) {
-                        setState(() => _fav = !_fav);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('No se pudo actualizar favorito'),
+      onTap: () {
+        final parking = widget.item.toParking();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ReserveSpacePage(parking: parking)),
+        );
+      },
+      child: Material(
+        elevation: 4,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          children: [
+            // Imagen + heart
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Image.network(
+                      heroImg,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (_, __, ___) => Container(
+                            color: const Color(0xFFE7ECF3),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
                             ),
-                          );
-                        }
-                      }
-                    },
+                          ),
+                      loadingBuilder:
+                          (c, child, p) =>
+                              p == null ? child : const _ImageShimmer(),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          // Info
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: MyText(
-                        text: widget.item.name,
-                        variant: MyTextVariant.bodyBold,
-                        fontSize: 15,
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Material(
+                    color: Colors.white,
+                    shape: const CircleBorder(),
+                    elevation: 2,
+                    child: IconButton(
+                      icon: Icon(
+                        _fav ? Icons.favorite : Icons.favorite_border,
+                        color: _fav ? Colors.red : navy,
                       ),
+                      onPressed: () async {
+                        setState(() => _fav = !_fav);
+                        try {
+                          if (!_fav) {
+                            await FavoriteService.instance.removeByDocId(
+                              widget.item.id,
+                            );
+                          }
+                        } catch (_) {
+                          setState(() => _fav = !_fav);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('No se pudo actualizar favorito'),
+                              ),
+                            );
+                          }
+                        }
+                      },
                     ),
-                    const Icon(Icons.star, size: 18, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    MyText(
-                      text: widget.item.rating.toStringAsFixed(1),
-                      variant: MyTextVariant.body,
-                      fontSize: 13,
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.attach_money, size: 16, color: navy),
-                    const SizedBox(width: 6),
+              ],
+            ),
+
+            // Info
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MyText(
+                          text: widget.item.name,
+                          variant: MyTextVariant.bodyBold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const Icon(Icons.star, size: 18, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      MyText(
+                        text: widget.item.rating.toStringAsFixed(1),
+                        variant: MyTextVariant.body,
+                        fontSize: 13,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.attach_money, size: 16, color: navy),
+                      const SizedBox(width: 6),
+                      MyText(
+                        text: 'Q${widget.item.price}',
+                        variant: MyTextVariant.body,
+                        fontSize: 13,
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.local_parking, size: 16, color: navy),
+                      const SizedBox(width: 6),
+                      MyText(
+                        text: 'Spaces: ${widget.item.spaces}',
+                        variant: MyTextVariant.bodyMuted,
+                        fontSize: 12,
+                      ),
+                    ],
+                  ),
+                  if ((widget.item.descripcion ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 6),
                     MyText(
-                      text: 'Q${widget.item.price}',
-                      variant: MyTextVariant.body,
-                      fontSize: 13,
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.local_parking, size: 16, color: navy),
-                    const SizedBox(width: 6),
-                    MyText(
-                      text: 'Spaces: ${widget.item.spaces}',
+                      text: widget.item.descripcion!,
                       variant: MyTextVariant.bodyMuted,
                       fontSize: 12,
                     ),
                   ],
-                ),
-                if ((widget.item.descripcion ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  MyText(
-                    text: widget.item.descripcion!,
-                    variant: MyTextVariant.bodyMuted,
-                    fontSize: 12,
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageShimmer extends StatelessWidget {
+  const _ImageShimmer();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFE9EDF3),
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }
@@ -370,18 +410,22 @@ class _FavoriteCardState extends State<_FavoriteCard> {
 
 class _FavItem {
   final String id; // favorites doc id (uid_parkingId)
+  final String parkingId; // <-- lo usamos para reconstruir Parking
   final String name;
   final String ownerID;
   final int price;
   final int spaces;
   final double rating;
   final String? imageUrl;
+  final String? coverUrl;
+  final List<String> photos;
   final String? descripcion;
   final double lat;
   final double lng;
 
   const _FavItem({
     required this.id,
+    required this.parkingId,
     required this.name,
     required this.ownerID,
     required this.price,
@@ -390,24 +434,61 @@ class _FavItem {
     required this.lat,
     required this.lng,
     this.imageUrl,
+    this.coverUrl,
+    this.photos = const [],
     this.descripcion,
   });
+
+  // Prioridad para mostrar
+  String? get heroImage {
+    if (photos.isNotEmpty) return photos.first;
+    return coverUrl ?? imageUrl;
+  }
+
+  /// Reconstruye un `Parking` para pantallas que lo necesitan (ReserveSpacePage).
+  Parking toParking() => Parking(
+    id: parkingId,
+    lat: lat,
+    lng: lng,
+    name: name,
+    ownerID: ownerID,
+    price: price,
+    spaces: spaces,
+    rating: rating,
+    originalPrice: null,
+    imageUrl: imageUrl,
+    localImagePath: null,
+    descripcion: descripcion,
+    coverUrl: coverUrl,
+    photos: photos,
+  );
 
   factory _FavItem.fromMap(String id, Map<String, dynamic> m) {
     double _d(dynamic v) =>
         (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+    List<String> _ls(dynamic v) =>
+        (v is List)
+            ? v
+                .map((e) => e?.toString() ?? '')
+                .where((e) => e.isNotEmpty)
+                .toList()
+            : const <String>[];
 
     return _FavItem(
       id: id,
+      parkingId:
+          (m['parkingId'] ?? '') as String, // <- viene del FavoriteService
       name: m['name'] ?? 'Parking',
       ownerID: m['ownerID'] ?? '',
       price: (m['price'] ?? 0) as int,
       spaces: (m['spaces'] ?? 0) as int,
       rating: _d(m['rating'] ?? 0),
-      imageUrl: m['imageUrl'],
-      descripcion: m['descripcion'],
-      lat: _d(m['lat'] ?? 0),
-      lng: _d(m['lng'] ?? 0),
+      imageUrl: m['imageUrl'] as String?,
+      coverUrl: m['coverUrl'] as String?,
+      photos: _ls(m['photos']),
+      descripcion: m['descripcion'] as String?,
+      lat: _d(m['lat']),
+      lng: _d(m['lng']),
     );
   }
 }
