@@ -1,31 +1,32 @@
+// lib/components/app_drawer.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/modules/auth/services/auth_page.dart';
-import 'package:mapbox_api/modules/reservations/pages/reservations_page.dart';
-import 'package:mapbox_api/modules/core/pages/favorites_page.dart';
-import 'package:mapbox_api/modules/user/profile_page.dart';
+import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
+import 'package:mapbox_api/features/core/pages/favorites_page.dart';
+import 'package:mapbox_api/features/user/profile_page.dart';
 
-class AppDrawer extends StatelessWidget {
+// Providers de auth (Riverpod)
+import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
+
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   static const primary = Color(0xFF1976D2);
   static const navy = Color(0xFF0D1B2A);
   static const navyLight = Color(0xFF1B3A57);
 
-  Future<void> _signUserOut(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    if (context.mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const AuthPage()),
-        (route) => false,
-      );
-    }
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(authActionsProvider).signOut();
+    if (!context.mounted) return;
+
+    // Volvemos al entrypoint de auth. AuthGate decidirá qué mostrar.
+    Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
   }
 
   // ---- Helper: mejor URL de foto (incluye providerData y upscaling de Google) ----
-  String? _bestPhotoUrl(User? u) {
+  String? _bestPhotoUrl(fb.User? u) {
     if (u == null) return null;
     String? url = u.photoURL;
 
@@ -39,7 +40,7 @@ class AppDrawer extends StatelessWidget {
     }
     if (url == null) return null;
 
-    // Subir resolución típica de Google (s96-c -> s200-c)
+    // Subir resolución típica de Google (s96- -> s200-)
     if (url.contains('googleusercontent.com') && url.contains('/s')) {
       url = url.replaceFirst(RegExp(r'/s\d+-'), '/s200-');
     }
@@ -47,8 +48,9 @@ class AppDrawer extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Leemos el usuario de forma reactiva con Riverpod
+    final user = ref.watch(currentUserProvider);
     final photoUrl = _bestPhotoUrl(user);
 
     return Drawer(
@@ -110,6 +112,12 @@ class AppDrawer extends StatelessWidget {
                   fontSize: 16,
                 ),
                 const SizedBox(height: 2),
+                if (user?.email != null)
+                  MyText(
+                    text: user!.email!,
+                    variant: MyTextVariant.bodyMuted,
+                    fontSize: 12,
+                  ),
               ],
             ),
           ),
@@ -122,6 +130,7 @@ class AppDrawer extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 children: [
                   const SizedBox(height: 8),
+
                   _DrawerItem(
                     icon: Icons.bookmark,
                     label: 'Mis reservas',
@@ -170,7 +179,7 @@ class AppDrawer extends StatelessWidget {
                     icon: Icons.logout,
                     label: 'Cerrar sesión',
                     labelVariant: MyTextVariant.normalBold,
-                    onTap: () => _signUserOut(context),
+                    onTap: () => _signOut(context, ref),
                   ),
                   const SizedBox(height: 8),
                 ],

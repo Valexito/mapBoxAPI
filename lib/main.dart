@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // ⬅️ Riverpod
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mapbox_api/features/auth/pages/auth_gate.dart';
 import 'package:mapbox_api/firebase_options.dart';
-
-import 'package:mapbox_api/modules/core/pages/home_page.dart';
-import 'package:mapbox_api/modules/auth/services/auth_page.dart';
-import 'package:mapbox_api/modules/reservations/pages/reservations_page.dart';
-import 'package:mapbox_api/modules/reservations/pages/map_navigation_page.dart';
-import 'package:mapbox_api/modules/reservations/widgets/route_view_page_wrapper.dart';
-import 'package:mapbox_api/modules/provider/become_provider_page.dart';
+import 'package:mapbox_api/features/core/pages/home_page.dart';
+import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
+import 'package:mapbox_api/features/reservations/pages/map_navigation_page.dart';
+import 'package:mapbox_api/features/reservations/widgets/route_view_page_wrapper.dart';
+import 'package:mapbox_api/features/provider/become_provider_page.dart';
 import 'package:mapbox_api/components/map_picker_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Evita [core/duplicate-app] si ya existe una instancia (auto-init o hot restart)
+  // ✅ Avoids [core/duplicate-app] if hot restart or auto-init
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
 
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      // ⬅️ this is the only real change
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -34,7 +39,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
       initialRoute: '/auth',
       routes: {
-        '/auth': (_) => const AuthPage(),
+        '/auth': (_) => const AuthGate(),
         '/homePage': (_) => const HomePage(),
         '/becomeProvider': (_) => const BecomeProviderPage(),
         '/mapPicker': (_) => const MapPickerPage(),

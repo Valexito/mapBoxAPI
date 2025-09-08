@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
-import 'package:mapbox_api/modules/core/services/recent_searches.dart';
+import 'package:mapbox_api/features/core/services/recent_searches.dart';
 
 class HomeBottomPanel extends StatefulWidget {
   const HomeBottomPanel({
