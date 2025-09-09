@@ -1,17 +1,21 @@
+// lib/features/users/pages/configure_profile_page.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
+import 'package:mapbox_api/features/users/providers/user_providers.dart';
 
-class ConfigureProfilePage extends StatefulWidget {
+class ConfigureProfilePage extends ConsumerStatefulWidget {
   const ConfigureProfilePage({super.key});
-
   @override
-  State<ConfigureProfilePage> createState() => _ConfigureProfilePageState();
+  ConsumerState<ConfigureProfilePage> createState() =>
+      _ConfigureProfilePageState();
 }
 
-class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
+class _ConfigureProfilePageState extends ConsumerState<ConfigureProfilePage> {
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
@@ -20,10 +24,9 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _mobileCtrl = TextEditingController();
-  final _dobCtrl = TextEditingController(); // readOnly + date picker
+  final _dobCtrl = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-
   String _gender = 'male';
   bool _saving = false;
 
@@ -33,7 +36,7 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
     final u = _auth.currentUser;
     _nameCtrl.text = u?.displayName ?? '';
     _emailCtrl.text = u?.email ?? '';
-    // _mobileCtrl, _dobCtrl, _gender: si los guardas en Firestore, precárgalos aquí
+    // Si guardas en Firestore más info, podrías precargarla observando userProfileStreamProvider
   }
 
   @override
@@ -47,32 +50,16 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
 
   Future<void> _pickDob() async {
     final now = DateTime.now();
-    final first = DateTime(now.year - 100, 1, 1);
-    final last = DateTime(now.year, now.month, now.day);
-
     final selected = await showDatePicker(
       context: context,
       initialDate: DateTime(now.year - 18, now.month, now.day),
-      firstDate: first,
-      lastDate: last,
+      firstDate: DateTime(now.year - 100, 1, 1),
+      lastDate: DateTime(now.year, now.month, now.day),
       helpText: 'Selecciona tu fecha de nacimiento',
-      builder: (context, child) {
-        // keep consistent with light theme
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(
-              context,
-            ).colorScheme.copyWith(primary: navyBottom, secondary: navyBottom),
-          ),
-          child: child!,
-        );
-      },
     );
     if (selected != null) {
       _dobCtrl.text =
-          '${selected.day.toString().padLeft(2, '0')}/'
-          '${selected.month.toString().padLeft(2, '0')}/'
-          '${selected.year}';
+          '${selected.day.toString().padLeft(2, '0')}/${selected.month.toString().padLeft(2, '0')}/${selected.year}';
       setState(() {});
     }
   }
@@ -85,19 +72,20 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        // Actualiza nombre y email en FirebaseAuth
         if (_nameCtrl.text.trim().isNotEmpty) {
           await user.updateDisplayName(_nameCtrl.text.trim());
         }
         if (_emailCtrl.text.trim().isNotEmpty &&
             _emailCtrl.text.trim() != user.email) {
           await user.verifyBeforeUpdateEmail(_emailCtrl.text.trim());
-          // Nota: verifyBeforeUpdateEmail envía un correo para confirmar el cambio
         }
       }
-
-      // TODO: si usas Firestore, guarda aquí mobile, dob y gender
-      // await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({...}, SetOptions(merge: true));
+      // Si quieres persistir móvil/dob/gender en Firestore:
+      await ref.read(saveProfileProvider)(
+        name: _nameCtrl.text.trim(),
+        phone: _mobileCtrl.text.trim(),
+        role: 'user',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(
@@ -129,7 +117,7 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              // ===== HEADER (gradient + avatar + close) =====
+              // HEADER
               Stack(
                 children: [
                   Container(
@@ -197,7 +185,7 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                                     size: 20,
                                   ),
                                   onPressed: () {
-                                    // TODO: abrir picker de imagen y subirla, luego user.updatePhotoURL(...)
+                                    // TODO: subir foto y user.updatePhotoURL(...)
                                   },
                                 ),
                               ),
@@ -213,7 +201,6 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                       ],
                     ),
                   ),
-                  // Close (top-right)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -224,8 +211,7 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                   ),
                 ],
               ),
-
-              // ===== CARD (fields like the mock) =====
+              // CARD
               Transform.translate(
                 offset: const Offset(0, -34),
                 child: Padding(
@@ -241,7 +227,6 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // User Name
                             const MyText(
                               text: 'User Name',
                               variant: MyTextVariant.normal,
@@ -260,8 +245,6 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                                           : null,
                             ),
                             const SizedBox(height: 14),
-
-                            // Email
                             const MyText(
                               text: 'Email',
                               variant: MyTextVariant.normal,
@@ -283,8 +266,6 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                               },
                             ),
                             const SizedBox(height: 14),
-
-                            // Mobile
                             const MyText(
                               text: 'Mobile Number',
                               variant: MyTextVariant.normal,
@@ -299,8 +280,6 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                               margin: EdgeInsets.zero,
                             ),
                             const SizedBox(height: 14),
-
-                            // DOB
                             const MyText(
                               text: 'Date of Birth',
                               variant: MyTextVariant.normal,
@@ -316,8 +295,6 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                               margin: EdgeInsets.zero,
                             ),
                             const SizedBox(height: 16),
-
-                            // Gender
                             const MyText(
                               text: 'Sex',
                               variant: MyTextVariant.normal,
@@ -340,12 +317,10 @@ class _ConfigureProfilePageState extends State<ConfigureProfilePage> {
                                 ),
                               ],
                             ),
-
                             const SizedBox(height: 22),
                             MyButton(
                               onTap: _saving ? null : _save,
                               text: _saving ? 'Saving...' : 'Save',
-                              // usa tu estilo de degradado por defecto
                             ),
                           ],
                         ),
@@ -368,7 +343,6 @@ class _GenderChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
   const _GenderChip({
     required this.label,
     required this.selected,
@@ -380,7 +354,6 @@ class _GenderChip extends StatelessWidget {
     const navy = Color(0xFF0D1B2A);
     final bg = selected ? navy : const Color(0xFFEFF2F6);
     final fg = selected ? Colors.white : const Color(0xFF1B3A57);
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),

@@ -1,16 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/features/users/pages/complete_profile_page.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/pages/home_page.dart';
+import 'package:mapbox_api/features/users/providers/user_providers.dart';
 
-class CompleteProfilePage extends StatefulWidget {
+class CompleteProfilePage extends ConsumerStatefulWidget {
   final User user;
   final bool isNewUser;
   final String? password;
-
   const CompleteProfilePage({
     super.key,
     required this.user,
@@ -19,10 +21,11 @@ class CompleteProfilePage extends StatefulWidget {
   });
 
   @override
-  State<CompleteProfilePage> createState() => _CompleteProfilePageState();
+  ConsumerState<CompleteProfilePage> createState() =>
+      _CompleteProfilePageState();
 }
 
-class _CompleteProfilePageState extends State<CompleteProfilePage> {
+class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   String role = 'user';
@@ -35,20 +38,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     super.dispose();
   }
 
-  Future<void> saveProfile() async {
+  Future<void> _save() async {
     setState(() => isSaving = true);
     try {
-      final uid = widget.user.uid;
-      final email = widget.user.email ?? '';
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'uid': uid,
-        'email': email,
-        'name': nameController.text.trim(),
-        'phone': phoneController.text.trim(),
-        'role': role,
-        'createdAt': Timestamp.now(),
-      });
-
+      await ref.read(saveProfileProvider)(
+        name: nameController.text.trim(),
+        phone: phoneController.text.trim(),
+        role: role,
+      );
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -66,29 +63,24 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    const navyDark = Color(0xFF0D1B2A); // mismo tono que usas en SignUp
+    const navyDark = Color(0xFF0D1B2A);
     return Scaffold(
-      backgroundColor: Colors.white, // igual que SignUp
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            // Contenido principal (igual estructura que SignUp: título, subtítulo, labels y campos)
             SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 40),
-
-                  // Título
                   const MyText(
                     text: 'COMPLETE PROFILE',
                     variant: MyTextVariant.title,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
-
-                  // Subtítulo
                   const MyText(
                     text:
                         'Agrega tus datos para continuar y habilitar todas las funciones.',
@@ -97,8 +89,6 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     fontSize: 13,
                   ),
                   const SizedBox(height: 24),
-
-                  // Label + Campo: Full Name
                   const MyText(
                     text: 'Full Name',
                     variant: MyTextVariant.normal,
@@ -113,8 +103,6 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     margin: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 14),
-
-                  // Label + Campo: Phone
                   const MyText(
                     text: 'Phone',
                     variant: MyTextVariant.normal,
@@ -130,8 +118,6 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     margin: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 14),
-
-                  // Label + Campo: Role (Dropdown estilizado para encajar con los inputs)
                   const MyText(
                     text: 'Role',
                     variant: MyTextVariant.normal,
@@ -163,18 +149,13 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 26),
-
-                  // Botón principal (mismo componente MyButton)
                   isSaving
                       ? const Center(child: CircularProgressIndicator())
-                      : MyButton(text: 'Save and continue', onTap: saveProfile),
+                      : MyButton(text: 'Save and continue', onTap: _save),
                 ],
               ),
             ),
-
-            // Botón cerrar en esquina superior derecha (igual a SignUp)
             Positioned(
               top: 10,
               right: 10,
