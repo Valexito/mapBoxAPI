@@ -1,30 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
-
-import 'package:mapbox_api/components/ui/my_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
+import 'package:mapbox_api/features/reservations/models/reservation.dart';
+import 'package:mapbox_api/features/reservations/providers/reservations_providers.dart';
 
-class ReservationsPage extends StatefulWidget {
+class ReservationsPage extends ConsumerStatefulWidget {
   const ReservationsPage({super.key});
-
   @override
-  State<ReservationsPage> createState() => _ReservationsPageState();
+  ConsumerState<ReservationsPage> createState() => _ReservationsPageState();
 }
 
-class _ReservationsPageState extends State<ReservationsPage>
+class _ReservationsPageState extends ConsumerState<ReservationsPage>
     with SingleTickerProviderStateMixin {
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
-
-  late final TabController _tab;
-
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 3, vsync: this);
-  }
+  late final TabController _tab = TabController(length: 3, vsync: this);
 
   @override
   void dispose() {
@@ -32,30 +23,10 @@ class _ReservationsPageState extends State<ReservationsPage>
     super.dispose();
   }
 
-  Stream<List<_ResItem>> _streamUserReservations() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-
-    // TIP: si Firestore te pide un índice, abre el link que muestra en consola una vez.
-    return FirebaseFirestore.instance
-        .collection('reservations')
-        .where('userId', isEqualTo: uid)
-        .orderBy('reservedAt', descending: true)
-        .snapshots()
-        .map(
-          (qs) =>
-              qs.docs
-                  .map((d) => _ResItem.fromFirestore(d.id, d.data()))
-                  .toList(),
-        );
-  }
-
   @override
   Widget build(BuildContext context) {
-    const headerH = 160.0;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    final auth = ref.watch(firebaseAuthProvider);
+    if (auth.currentUser == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFF2F4F7),
         body: Center(
@@ -67,50 +38,14 @@ class _ReservationsPageState extends State<ReservationsPage>
       );
     }
 
+    final asyncList = ref.watch(userReservationsProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
       body: SafeArea(
         child: Column(
           children: [
-            // ===== HEADER navy (con back) =====
-            SizedBox(
-              height: headerH,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [navyTop, navyBottom],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 4,
-                    top: 0,
-                    bottom: 0,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  const Center(
-                    child: MyText(
-                      text: 'MY RESERVATIONS',
-                      variant: MyTextVariant.title,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ===== CARD con tabs =====
+            _Header(navyTop: navyTop, navyBottom: navyBottom),
             Transform.translate(
               offset: const Offset(0, -28),
               child: Padding(
@@ -128,10 +63,6 @@ class _ReservationsPageState extends State<ReservationsPage>
                         insets: EdgeInsets.symmetric(horizontal: 24),
                       ),
                       dividerColor: Colors.transparent,
-                      overlayColor: MaterialStatePropertyAll(
-                        Colors.transparent,
-                      ),
-                      splashFactory: NoSplash.splashFactory,
                       labelColor: navyBottom,
                       unselectedLabelColor: Colors.black54,
                       labelStyle: const TextStyle(
@@ -148,27 +79,26 @@ class _ReservationsPageState extends State<ReservationsPage>
                 ),
               ),
             ),
-
-            // ===== LISTAS =====
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -24),
-                child: StreamBuilder<List<_ResItem>>(
-                  stream: _streamUserReservations(),
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snap.hasError) {
-                      return const _ErrorState();
-                    }
-
-                    final all = snap.data ?? const <_ResItem>[];
-                    final act = all.where((e) => e.status == 'active').toList();
-                    final com =
-                        all.where((e) => e.status == 'completed').toList();
-                    final can =
-                        all.where((e) => e.status == 'cancelled').toList();
+                child: asyncList.when(
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error:
+                      (_, __) => const Center(
+                        child: MyText(
+                          text: 'Error loading reservations',
+                          variant: MyTextVariant.bodyBold,
+                        ),
+                      ),
+                  data: (all) {
+                    final act =
+                        all
+                            .where((_) => true)
+                            .toList(); // si luego manejas status, separa aquí
+                    final com = <Reservation>[];
+                    final can = <Reservation>[];
 
                     return TabBarView(
                       controller: _tab,
@@ -189,8 +119,42 @@ class _ReservationsPageState extends State<ReservationsPage>
   }
 }
 
+class _Header extends StatelessWidget {
+  const _Header({required this.navyTop, required this.navyBottom});
+  final Color navyTop;
+  final Color navyBottom;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 160,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [navyTop, navyBottom],
+              ),
+            ),
+          ),
+          const Center(
+            child: MyText(
+              text: 'MY RESERVATIONS',
+              variant: MyTextVariant.title,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ResList extends StatelessWidget {
-  final List<_ResItem> items;
+  final List<Reservation> items;
   const _ResList({required this.items});
 
   @override
@@ -203,220 +167,29 @@ class _ResList extends StatelessWidget {
         ),
       );
     }
-
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _ReservationCard(item: items[i]),
-    );
-  }
-}
-
-class _ReservationCard extends StatelessWidget {
-  final _ResItem item;
-  const _ReservationCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    const navy = Color(0xFF1B3A57);
-
-    return Material(
-      elevation: 3,
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                // Thumbnail
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF2F6),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child:
-                      item.imageUrl == null || item.imageUrl!.isEmpty
-                          ? const Icon(
-                            Icons.local_parking,
-                            color: navy,
-                            size: 32,
-                          )
-                          : Image.network(item.imageUrl!, fit: BoxFit.cover),
-                ),
-                const SizedBox(width: 12),
-
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      MyText(
-                        text: item.name,
-                        variant: MyTextVariant.bodyBold,
-                        fontSize: 15,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.schedule, size: 16, color: navy),
-                          const SizedBox(width: 6),
-                          MyText(
-                            text:
-                                item.minutes != null
-                                    ? '${item.minutes} min'
-                                    : '—',
-                            variant: MyTextVariant.body,
-                            fontSize: 13,
-                          ),
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.place_outlined,
-                            size: 16,
-                            color: navy,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: MyText(
-                              text:
-                                  (item.address?.isEmpty ?? true)
-                                      ? 'Ubicación disponible'
-                                      : item.address!,
-                              variant: MyTextVariant.bodyMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (item.reservedAt != null) ...[
-                        const SizedBox(height: 4),
-                        MyText(
-                          text: _fmtDate(item.reservedAt!),
-                          variant: MyTextVariant.bodyMuted,
-                          fontSize: 12,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+      itemBuilder: (_, i) {
+        final r = items[i];
+        return Card(
+          elevation: 3,
+          child: ListTile(
+            leading: const Icon(Icons.local_parking),
+            title: Text(r.parkingName),
+            subtitle: Text('Espacio: ${r.spaceNumber}'),
+            trailing: Text(
+              _fmtDate(r.reservedAt),
+              style: const TextStyle(fontSize: 12),
             ),
-
-            const SizedBox(height: 10),
-
-            // Botón Ver ruta / Re-Book
-            SizedBox(
-              height: 44,
-              width: double.infinity,
-              child: MyButton(
-                text: item.status == 'active' ? 'Ver ruta' : 'Re-Book',
-                onTap: () {
-                  if (item.status == 'active' &&
-                      item.lat != null &&
-                      item.lng != null) {
-                    Navigator.pushNamed(
-                      context,
-                      '/routeView',
-                      arguments: {
-                        'destination': LatLng(item.lat!, item.lng!),
-                        'parkingName': item.name,
-                      },
-                    );
-                  } else {
-                    // aquí puedes navegar al flujo de nueva reserva
-                    // Navigator.pushNamed(context, '/reserve', arguments: {...});
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  static String _fmtDate(DateTime dt) {
-    final dd = dt.day.toString().padLeft(2, '0');
-    final mm = dt.month.toString().padLeft(2, '0');
-    final yyyy = dt.year.toString();
-    final hh = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$dd/$mm/$yyyy  $hh:$min';
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: MyText(
-          text: 'Error loading reservations',
-          variant: MyTextVariant.bodyBold,
-        ),
-      ),
-    );
-  }
-}
-
-class _ResItem {
-  final String id;
-  final String parkingId;
-  final String name;
-  final String? address;
-  final int? minutes;
-  final String status; // active/completed/cancelled
-  final String? imageUrl;
-  final DateTime? reservedAt;
-  final double? lat;
-  final double? lng;
-
-  const _ResItem({
-    required this.id,
-    required this.parkingId,
-    required this.name,
-    required this.status,
-    this.address,
-    this.minutes,
-    this.imageUrl,
-    this.reservedAt,
-    this.lat,
-    this.lng,
-  });
-
-  factory _ResItem.fromFirestore(String id, Map<String, dynamic> data) {
-    // Campos tolerantes a null/ausentes para evitar crasheos en prod
-    DateTime? reserved;
-    final ts = data['reservedAt'];
-    if (ts is Timestamp) reserved = ts.toDate();
-    if (ts is DateTime) reserved = ts;
-
-    double? _toDouble(dynamic v) {
-      if (v == null) return null;
-      if (v is num) return v.toDouble();
-      if (v is String) return double.tryParse(v);
-      return null;
-    }
-
-    return _ResItem(
-      id: id,
-      parkingId: (data['parkingId'] ?? '') as String,
-      name: (data['parkingName'] ?? 'Parking') as String,
-      address: data['address'] as String?,
-      minutes: (data['minutes'] is int) ? data['minutes'] as int : null,
-      status: (data['status'] ?? 'active') as String,
-      imageUrl: data['imageUrl'] as String?,
-      reservedAt: reserved,
-      lat: _toDouble(data['lat']),
-      lng: _toDouble(data['lng']),
-    );
-  }
+  static String _fmtDate(DateTime dt) =>
+      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} '
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }

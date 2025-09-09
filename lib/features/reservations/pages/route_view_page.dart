@@ -1,23 +1,18 @@
-import 'dart:async';
+// lib/features/reservations/pages/route_view_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/features/reservations/pages/map_navigation_page.dart';
-import 'package:mapbox_api/features/reservations/services/geolocator.dart';
-import 'package:mapbox_api/features/reservations/services/location_tracker.dart';
-import 'package:mapbox_api/features/reservations/services/mapbox_directions_service.dart';
-import 'package:mapbox_api/features/reservations/widgets/route_bottom_info_card.dart';
+import 'package:mapbox_api/features/reservations/providers/location_providers.dart';
+import 'package:mapbox_api/features/reservations/providers/map_providers.dart';
+import 'package:mapbox_api/features/reservations/providers/directions_providers.dart';
+import 'package:mapbox_api/features/reservations/components/route_bottom_info_card.dart';
 
-const MAP_BOX_ACCESS_TOKEN =
-    'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
-
-class RouteViewPage extends StatefulWidget {
+class RouteViewPage extends ConsumerWidget {
   final LatLng destination;
   final String parkingName;
-
   const RouteViewPage({
     super.key,
     required this.destination,
@@ -25,221 +20,214 @@ class RouteViewPage extends StatefulWidget {
   });
 
   @override
-  State<RouteViewPage> createState() => _RouteViewPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final map = ref.watch(mapControllerProvider);
+    // 1) Obtener origen (con fallback si falla)
+    final originAsync = ref.watch(currentLocationProvider);
 
-class _RouteViewPageState extends State<RouteViewPage> {
-  static const navyTop = Color(0xFF0D1B2A);
-  static const navyBottom = Color(0xFF1B3A57);
+    return originAsync.when(
+      loading: () => const _ScaffoldLoader(),
+      error:
+          (e, _) => _ErrorScaffold(
+            message:
+                'No se pudo obtener tu ubicación.\n$e\n\nActiva GPS y permisos y reintenta.',
+            onRetry: () => ref.refresh(currentLocationProvider),
+          ),
+      data: (origin) {
+        // 2) Obtener ruta/distancia/tiempo con providers family
+        final args = (origin: origin, destination: destination);
+        final pointsAsync = ref.watch(routePointsProvider(args));
+        final distanceAsync = ref.watch(routeDistanceProvider(args));
+        final durationAsync = ref.watch(routeDurationProvider(args));
 
-  final _mapController = MapController();
-  StreamSubscription<Position>? _positionSubscription;
+        return pointsAsync.when(
+          loading: () => const _ScaffoldLoader(),
+          error:
+              (e, _) => _ErrorScaffold(
+                message:
+                    'No se pudo calcular la ruta.\n$e\n\nVerifica tu conexión o el MAPBOX_TOKEN.',
+                onRetry: () {
+                  ref.invalidate(routePointsProvider(args));
+                  ref.invalidate(routeDistanceProvider(args));
+                  ref.invalidate(routeDurationProvider(args));
+                },
+              ),
+          data: (points) {
+            final distance = distanceAsync.maybeWhen(
+              data: (v) => v,
+              orElse: () => '—',
+            );
+            final duration = durationAsync.maybeWhen(
+              data: (v) => v,
+              orElse: () => '—',
+            );
 
-  LatLng? _currentPosition;
-  List<LatLng> _routePoints = [];
+            const navyBottom = Color(0xFF1B3A57);
+            return Scaffold(
+              backgroundColor: const Color(0xFFF2F4F7),
+              body: Stack(
+                children: [
+                  FlutterMap(
+                    mapController: map,
+                    options: MapOptions(
+                      initialCenter: origin,
+                      initialZoom: 15,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                      ),
+                    ),
+                    children: [
+                      // === Mapbox Streets (mismo look que tu 1a captura) ===
+                      TileLayer(
+                        urlTemplate:
+                            'https://api.mapbox.com/styles/v1/{id}/tiles/512/{z}/{x}/{y}@2x?access_token={accessToken}',
+                        additionalOptions: const {
+                          'accessToken': String.fromEnvironment('MAPBOX_TOKEN'),
+                          'id': 'mapbox/streets-v12',
+                        },
+                        tileProvider: NetworkTileProvider(),
+                      ),
 
-  String _distance = '…';
-  String _duration = '…';
-
-  @override
-  void initState() {
-    super.initState();
-    _prepareRoute();
-  }
-
-  Future<void> _prepareRoute() async {
-    try {
-      final position = await getCurrentLocation();
-      final directions = MapboxDirectionsService();
-
-      final points = await directions.getRouteCoordinates(
-        origin: position,
-        destination: widget.destination,
-      );
-      final duration = await directions.getRouteDuration(
-        origin: position,
-        destination: widget.destination,
-      );
-      final distance = await directions.getRouteDistance(
-        origin: position,
-        destination: widget.destination,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _currentPosition = position;
-        _routePoints = points;
-        _duration = duration;
-        _distance = distance;
-      });
-
-      _positionSubscription = LocationTracker.getPositionStream().listen((
-        pos,
-      ) async {
-        final updated = LatLng(pos.latitude, pos.longitude);
-        if (!mounted) return;
-        setState(() => _currentPosition = updated);
-
-        // Recalcular y filtrar ruta para no dibujar puntos ya recorridos
-        final newRoute = await directions.getRouteCoordinates(
-          origin: updated,
-          destination: widget.destination,
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: points,
+                            strokeWidth: 6,
+                            color: navyBottom,
+                          ),
+                        ],
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          _pin(
+                            origin,
+                            const Icon(
+                              Icons.my_location,
+                              color: Color(0xFF16A34A),
+                              size: 22,
+                            ),
+                          ),
+                          _pin(
+                            destination,
+                            const Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 26,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  _TopGradientHeader(
+                    title: 'Ruta a',
+                    subtitle: parkingName,
+                    onBack: () => Navigator.pop(context),
+                  ),
+                  Positioned(
+                    top: 100,
+                    left: 16,
+                    right: 16,
+                    child: _RouteSummaryCard(
+                      distance: distance,
+                      duration: duration,
+                    ),
+                  ),
+                  Positioned(
+                    right: 16,
+                    bottom: 140,
+                    child: _RecenterButton(
+                      onTap: () => map.move(origin, map.camera.zoom),
+                    ),
+                  ),
+                ],
+              ),
+              bottomSheet: RouteBottomInfoCard(
+                parkingName: parkingName,
+                distance: distance,
+                duration: duration,
+                onNavigate: () {},
+                onCancelLater: () => Navigator.pop(context),
+              ),
+            );
+          },
         );
-        final filtered = _filterFutureRoutePoints(updated, newRoute);
-
-        if (!mounted) return;
-        setState(() => _routePoints = filtered);
-
-        _mapController.move(updated, _mapController.camera.zoom);
-      });
-    } catch (e) {
-      debugPrint('Error cargando ruta: $e');
-    }
-  }
-
-  List<LatLng> _filterFutureRoutePoints(LatLng currentPos, List<LatLng> route) {
-    const threshold = 10.0; // metros
-    final d = Distance();
-    return route.skipWhile((p) => d(currentPos, p) < threshold).toList();
-    // si la ruta viniera invertida, invierte arriba
-  }
-
-  @override
-  void dispose() {
-    _positionSubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // loader inicial
-    if (_currentPosition == null || _routePoints.isEmpty) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF2F4F7),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // UI consistente con la app: header navy + tarjeta info, botón recenter con gradiente.
-    return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
-      body: Stack(
-        children: [
-          // Mapa
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _currentPosition!,
-              initialZoom: 15,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-              ),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$MAP_BOX_ACCESS_TOKEN',
-                userAgentPackageName: 'com.example.mapbox_api',
-              ),
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: _routePoints,
-                    strokeWidth: 6,
-                    color: navyBottom,
-                  ),
-                ],
-              ),
-              MarkerLayer(
-                markers: [
-                  _pinMarker(
-                    point: _currentPosition!,
-                    bg: Colors.white,
-                    icon: const Icon(
-                      Icons.my_location,
-                      color: Color(0xFF16A34A),
-                      size: 22,
-                    ),
-                  ),
-                  _pinMarker(
-                    point: widget.destination,
-                    bg: Colors.white,
-                    icon: const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 26,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          // Header degradado (igual lenguaje que Login/Profile)
-          _TopGradientHeader(
-            title: 'Ruta a',
-            subtitle: widget.parkingName,
-            onBack: () => Navigator.pop(context),
-          ),
-
-          // Tarjeta flotante con distancia y tiempo
-          Positioned(
-            top: 100,
-            left: 16,
-            right: 16,
-            child: _RouteSummaryCard(distance: _distance, duration: _duration),
-          ),
-
-          // Botón recenter con gradiente (en vez de FAB gris)
-          Positioned(
-            right: 16,
-            bottom: 140, // arriba del bottomSheet
-            child: _RecenterButton(
-              onTap: () {
-                final pos = _currentPosition;
-                if (pos != null) {
-                  _mapController.move(pos, _mapController.camera.zoom);
-                }
-              },
-            ),
-          ),
-        ],
-      ),
-
-      // Tu tarjeta inferior existente
-      bottomSheet: RouteBottomInfoCard(
-        parkingName: widget.parkingName,
-        distance: _distance,
-        duration: _duration,
-        onNavigate: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MapNavigationPage()),
-          );
-        },
-        onCancelLater: () {
-          Navigator.pushReplacementNamed(context, '/homePage');
-        },
-      ),
+      },
     );
   }
+
+  Marker _pin(LatLng p, Widget icon) => Marker(
+    point: p,
+    width: 44,
+    height: 44,
+    child: Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Center(child: icon),
+    ),
+  );
 }
 
-/// ===== Widgets de UI (coherentes con tu diseño) =====
+class _ScaffoldLoader extends StatelessWidget {
+  const _ScaffoldLoader();
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+    backgroundColor: Color(0xFFF2F4F7),
+    body: Center(child: CircularProgressIndicator()),
+  );
+}
+
+class _ErrorScaffold extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorScaffold({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFFF2F4F7),
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              size: 42,
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 class _TopGradientHeader extends StatelessWidget {
-  static const navyTop = Color(0xFF0D1B2A);
-  static const navyBottom = Color(0xFF1B3A57);
-
-  final String title;
-  final String subtitle;
-  final VoidCallback onBack;
-
   const _TopGradientHeader({
     required this.title,
     required this.subtitle,
     required this.onBack,
   });
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+  static const navyTop = Color(0xFF0D1B2A);
+  static const navyBottom = Color(0xFF1B3A57);
 
   @override
   Widget build(BuildContext context) {
@@ -254,32 +242,29 @@ class _TopGradientHeader extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const MyText(text: 'RUTA', variant: MyTextVariant.title),
+                  const SizedBox(height: 2),
+                  MyText(
+                    text: '$title $subtitle',
+                    variant: MyTextVariant.normal,
+                    fontSize: 13,
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const MyText(text: 'RUTA', variant: MyTextVariant.title),
-                    const SizedBox(height: 2),
-                    MyText(
-                      text: '$title ${subtitle}',
-                      variant: MyTextVariant.normal,
-                      fontSize: 13,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -287,11 +272,9 @@ class _TopGradientHeader extends StatelessWidget {
 }
 
 class _RouteSummaryCard extends StatelessWidget {
+  const _RouteSummaryCard({required this.distance, required this.duration});
   final String distance;
   final String duration;
-
-  const _RouteSummaryCard({required this.distance, required this.duration});
-
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -327,12 +310,10 @@ class _RouteSummaryCard extends StatelessWidget {
 }
 
 class _RecenterButton extends StatelessWidget {
+  const _RecenterButton({required this.onTap});
+  final VoidCallback onTap;
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
-
-  final VoidCallback onTap;
-  const _RecenterButton({required this.onTap});
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -362,26 +343,4 @@ class _RecenterButton extends StatelessWidget {
       ),
     );
   }
-}
-
-Marker _pinMarker({
-  required LatLng point,
-  required Color bg,
-  required Widget icon,
-}) {
-  return Marker(
-    point: point,
-    width: 44,
-    height: 44,
-    child: Container(
-      decoration: BoxDecoration(
-        color: bg,
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Center(child: icon),
-    ),
-  );
 }

@@ -2,65 +2,126 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+/// Lee el token desde --dart-define (o desde env_*.json con --dart-define-from-file)
+const _ENV_TOKEN = String.fromEnvironment('MAPBOX_TOKEN');
+
+/// Servicio de direcciones con soporte Mapbox + OSRM (fallback).
 class MapboxDirectionsService {
-  static const String _baseUrl =
-      'https://api.mapbox.com/directions/v5/mapbox/driving';
-  static const String _accessToken =
-      'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
+  MapboxDirectionsService({
+    String? mapboxAccessToken,
+    this.profile =
+        'driving', // 'driving' | 'driving-traffic' | 'walking' | 'cycling'
+  }) : _token = mapboxAccessToken ?? _ENV_TOKEN;
 
-  Future<List<LatLng>> getRouteCoordinates({
-    required LatLng origin,
-    required LatLng destination,
-  }) async {
-    final url =
-        '$_baseUrl/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&overview=full&access_token=$_accessToken';
+  final String _token;
+  final String profile;
 
-    final response = await http.get(Uri.parse(url));
+  Future<List<LatLng>> getRoutePoints(LatLng origin, LatLng destination) async {
+    final data = await _fetchRoute(origin, destination);
+    return data.points;
+  }
 
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-      final coords = jsonData['routes'][0]['geometry']['coordinates'];
-      return coords.map<LatLng>((c) => LatLng(c[1], c[0])).toList();
+  Future<double> getDistanceMeters(LatLng origin, LatLng destination) async {
+    final data = await _fetchRoute(origin, destination);
+    return data.distanceMeters;
+  }
+
+  Future<double> getDurationSeconds(LatLng origin, LatLng destination) async {
+    final data = await _fetchRoute(origin, destination);
+    return data.durationSeconds;
+  }
+
+  // -------------------- internos --------------------
+
+  Future<_RouteData> _fetchRoute(LatLng o, LatLng d) async {
+    // Si hay token => Mapbox, si no => OSRM público (nunca te deja en blanco)
+    if (_token.isNotEmpty) {
+      return _fetchRouteMapbox(o, d);
     } else {
-      throw Exception('Error al obtener la ruta desde Mapbox Directions API');
+      return _fetchRouteOsrm(o, d);
     }
   }
 
-  Future<String> getRouteDistance({
-    required LatLng origin,
-    required LatLng destination,
-  }) async {
-    final url =
-        '$_baseUrl/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?access_token=$_accessToken';
+  /// Mapbox Directions (requiere token)
+  Future<_RouteData> _fetchRouteMapbox(LatLng o, LatLng d) async {
+    final base =
+        'https://api.mapbox.com/directions/v5/mapbox/$profile/'
+        '${o.longitude},${o.latitude};${d.longitude},${d.latitude}';
+    final url = '$base?overview=full&geometries=geojson&access_token=$_token';
 
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-      final distanceMeters = jsonData['routes'][0]['distance'];
-      final distanceKm = (distanceMeters / 1000).toStringAsFixed(1);
-      return '$distanceKm km';
-    } else {
-      throw Exception('Error al obtener la distancia desde Mapbox');
+    final resp = await http.get(Uri.parse(url));
+    if (resp.statusCode != 200) {
+      throw StateError('Mapbox error ${resp.statusCode}: ${resp.body}');
     }
+
+    final json = jsonDecode(resp.body) as Map<String, dynamic>;
+    final routes = (json['routes'] as List?) ?? const [];
+    if (routes.isEmpty) throw StateError('Mapbox: no se encontró ruta');
+
+    final first = routes.first as Map<String, dynamic>;
+    final distance = (first['distance'] as num).toDouble(); // m
+    final duration = (first['duration'] as num).toDouble(); // s
+
+    final geometry = first['geometry'] as Map<String, dynamic>;
+    final coords =
+        (geometry['coordinates'] as List)
+            .map<List>((e) => (e as List).cast<num>().toList())
+            .toList();
+
+    final points =
+        coords.map((xy) => LatLng(xy[1].toDouble(), xy[0].toDouble())).toList();
+
+    return _RouteData(
+      points: points,
+      distanceMeters: distance,
+      durationSeconds: duration,
+    );
   }
 
-  Future<String> getRouteDuration({
-    required LatLng origin,
-    required LatLng destination,
-  }) async {
+  /// OSRM público (fallback sin token)
+  Future<_RouteData> _fetchRouteOsrm(LatLng o, LatLng d) async {
     final url =
-        '$_baseUrl/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?access_token=$_accessToken';
+        'https://router.project-osrm.org/route/v1/driving/'
+        '${o.longitude},${o.latitude};${d.longitude},${d.latitude}'
+        '?overview=full&geometries=geojson';
 
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-      final durationSeconds = jsonData['routes'][0]['duration'];
-      final durationMin = (durationSeconds / 60).round();
-      return '$durationMin min';
-    } else {
-      throw Exception('Error al obtener la duración desde Mapbox');
+    final resp = await http.get(Uri.parse(url));
+    if (resp.statusCode != 200) {
+      throw StateError('OSRM error ${resp.statusCode}: ${resp.body}');
     }
+
+    final json = jsonDecode(resp.body) as Map<String, dynamic>;
+    final routes = (json['routes'] as List?) ?? const [];
+    if (routes.isEmpty) throw StateError('OSRM: no se encontró ruta');
+
+    final first = routes.first as Map<String, dynamic>;
+    final distance = (first['distance'] as num).toDouble(); // m
+    final duration = (first['duration'] as num).toDouble(); // s
+
+    final geometry = first['geometry'] as Map<String, dynamic>;
+    final coords =
+        (geometry['coordinates'] as List)
+            .map<List>((e) => (e as List).cast<num>().toList())
+            .toList();
+
+    final points =
+        coords.map((xy) => LatLng(xy[1].toDouble(), xy[0].toDouble())).toList();
+
+    return _RouteData(
+      points: points,
+      distanceMeters: distance,
+      durationSeconds: duration,
+    );
   }
+}
+
+class _RouteData {
+  final List<LatLng> points;
+  final double distanceMeters;
+  final double durationSeconds;
+  _RouteData({
+    required this.points,
+    required this.distanceMeters,
+    required this.durationSeconds,
+  });
 }

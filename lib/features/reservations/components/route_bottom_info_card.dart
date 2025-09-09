@@ -43,7 +43,6 @@ class RouteBottomInfoCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // handle
             Center(
               child: Container(
                 width: 40,
@@ -55,29 +54,20 @@ class RouteBottomInfoCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // título (mismo variant que usas en Sign Up)
             MyText(
               text: parkingName,
               fontSize: 18,
               variant: MyTextVariant.title,
             ),
             const SizedBox(height: 10),
-
-            // chips de info (misma línea visual que el resto de tu app)
             Row(
-              children: [
-                const _InfoChip(
-                  icon: Icons.directions_walk,
-                  label: 'Distancia',
-                ),
-                const SizedBox(width: 10),
-                const _InfoChip(icon: Icons.timer_outlined, label: 'Tiempo'),
+              children: const [
+                _InfoChip(icon: Icons.directions_walk, label: 'Distancia'),
+                SizedBox(width: 10),
+                _InfoChip(icon: Icons.timer_outlined, label: 'Tiempo'),
               ],
             ),
             const SizedBox(height: 6),
-
-            // valores (usa MyText.body/bodyBold como en tus páginas)
             Row(
               children: [
                 Expanded(
@@ -98,10 +88,7 @@ class RouteBottomInfoCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // Botones iguales a los que usas en SignUp: primario MyButton (gradiente), secundario outlined
             Row(
               children: [
                 Expanded(
@@ -142,7 +129,6 @@ class RouteBottomInfoCard extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
-
   const _InfoChip({required this.icon, required this.label});
 
   @override

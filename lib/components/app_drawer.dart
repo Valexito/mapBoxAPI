@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/features/core/pages/favorites_page.dart';
-import 'package:mapbox_api/features/user/profile_page.dart';
+import 'package:mapbox_api/features/users/profile_page.dart';
 
 // Providers de auth (Riverpod)
 import 'package:mapbox_api/features/auth/providers/auth_providers.dart';

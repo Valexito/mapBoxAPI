@@ -1,46 +1,48 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
 import 'package:mapbox_api/features/reservations/models/parking.dart';
 import 'package:mapbox_api/features/reservations/models/reservation.dart';
+import 'package:mapbox_api/features/reservations/providers/reservations_providers.dart';
+import 'package:mapbox_api/features/reservations/components/confirm_reservation_dialog.dart';
 
-class ReserveSpacePage extends StatefulWidget {
+class ReserveSpacePage extends ConsumerStatefulWidget {
   final Parking parking;
-
   const ReserveSpacePage({super.key, required this.parking});
 
   @override
-  State<ReserveSpacePage> createState() => _ReserveSpacePageState();
+  ConsumerState<ReserveSpacePage> createState() => _ReserveSpacePageState();
 }
 
-class _ReserveSpacePageState extends State<ReserveSpacePage> {
+class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
-  // usa el número de espacios del parking si existe
   late final int totalSpaces =
       (widget.parking.spaces is int && widget.parking.spaces > 0)
           ? widget.parking.spaces
           : 20;
 
-  // demo de espacios ocupados (cámbialo por datos reales cuando los tengas)
   final List<int> occupiedSpaces = [2, 5, 6, 9, 13];
   int? selectedSpace;
 
   Future<void> _confirmReservation() async {
-    final confirm = await ConfirmReservationDialog.show(
+    final ok = await ConfirmReservationDialog.show(
       context,
       destination: LatLng(widget.parking.lat, widget.parking.lng),
       parkingName: widget.parking.name,
       spaceNumber: selectedSpace!,
     );
 
-    if (confirm == true && selectedSpace != null) {
-      final reservation = Reservation(
-        userId: FirebaseAuth.instance.currentUser!.uid,
+    if (ok == true && selectedSpace != null) {
+      final uid = ref.read(firebaseAuthProvider).currentUser!.uid;
+
+      final r = Reservation(
+        userId: uid,
         parkingId: widget.parking.id,
         parkingName: widget.parking.name,
         spaceNumber: selectedSpace!,
@@ -49,14 +51,11 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
         lng: widget.parking.lng,
       );
 
-      await FirebaseFirestore.instance
-          .collection('reservations')
-          .add(reservation.toMap());
+      await ref.read(createReservationProvider)(r);
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(
+      Navigator.of(context).pushNamed(
         '/routeView',
-        ModalRoute.withName('/homeNav'),
         arguments: {
           'destination': LatLng(widget.parking.lat, widget.parking.lng),
           'parkingName': widget.parking.name,
@@ -68,8 +67,6 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
   @override
   Widget build(BuildContext context) {
     const headerHeight = 220.0;
-
-    // responsive columns (3–5)
     final w = MediaQuery.of(context).size.width;
     final cross =
         w >= 500
@@ -85,7 +82,7 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              // ===== HEADER (degradado como Login/Profile) =====
+              // ===== HEADER =====
               Stack(
                 children: [
                   Container(
@@ -101,7 +98,6 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // icono/imagen del parking
                         Container(
                           width: 90,
                           height: 90,
@@ -149,7 +145,6 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                       ],
                     ),
                   ),
-                  // cerrar
                   Positioned(
                     top: 6,
                     left: 6,
@@ -164,7 +159,7 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                 ],
               ),
 
-              // ===== CARD (misma tarjeta que en Login/Configure) =====
+              // ===== CARD =====
               Transform.translate(
                 offset: const Offset(0, -34),
                 child: Padding(
@@ -184,8 +179,6 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                             fontSize: 13,
                           ),
                           const SizedBox(height: 8),
-
-                          // Leyenda
                           Row(
                             children: const [
                               _LegendDot(
@@ -206,8 +199,6 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                             ],
                           ),
                           const SizedBox(height: 12),
-
-                          // GRID
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -230,15 +221,15 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                                 onTap:
                                     occupied
                                         ? null
-                                        : () => setState(() {
-                                          selectedSpace = selected ? null : num;
-                                        }),
+                                        : () => setState(
+                                          () =>
+                                              selectedSpace =
+                                                  selected ? null : num,
+                                        ),
                               );
                             },
                           ),
-
                           const SizedBox(height: 14),
-                          // Resumen
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -268,7 +259,6 @@ class _ReserveSpacePageState extends State<ReserveSpacePage> {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 18),
                           MyButton(
                             text: 'Confirmar reserva',
@@ -311,32 +301,33 @@ class _SpaceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // estilos según estado
-    final BoxDecoration deco;
-    if (occupied) {
-      deco = BoxDecoration(
-        color: const Color(0xFFE5E7EB),
-        borderRadius: BorderRadius.circular(12),
-      );
-    } else if (selected) {
-      deco = BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [navyTop, navyBottom],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      );
-    } else {
-      deco = BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF16A34A), width: 1.2),
-      );
-    }
+    final BoxDecoration deco =
+        occupied
+            ? BoxDecoration(
+              color: const Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.circular(12),
+            )
+            : selected
+            ? BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [navyTop, navyBottom],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            )
+            : BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF16A34A), width: 1.2),
+            );
 
     final textColor =
         occupied
@@ -400,84 +391,6 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         MyText(text: label, variant: MyTextVariant.body, fontSize: 12),
       ],
-    );
-  }
-}
-
-/// Diálogo de confirmación consistente con tus componentes
-class ConfirmReservationDialog {
-  static Future<bool?> show(
-    BuildContext context, {
-    required LatLng destination,
-    required String parkingName,
-    required int spaceNumber,
-  }) {
-    const navyLight = Color(0xFF1B3A57);
-
-    return showDialog<bool>(
-      context: context,
-      builder:
-          (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const MyText(
-                    text: 'CONFIRMAR RESERVA',
-                    variant: MyTextVariant.title,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  MyText(
-                    text:
-                        'Parqueo: $parkingName\nEspacio: $spaceNumber\n¿Deseas continuar?',
-                    variant: MyTextVariant.body,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        height: 42,
-                        width: 120,
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: navyLight,
-                              width: 1.4,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const MyText(
-                            text: 'Cancelar',
-                            variant: MyTextVariant.normalBold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        height: 42,
-                        width: 140,
-                        child: MyButton(
-                          text: 'Confirmar',
-                          onTap: () => Navigator.of(ctx).pop(true),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
     );
   }
 }

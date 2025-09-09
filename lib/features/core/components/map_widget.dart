@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/features/core/services/favorite_service.dart';
-import 'package:mapbox_api/features/core/widgets/home_bottom_parking_details.dart';
+import 'package:mapbox_api/features/core/components/home_bottom_parking_details.dart';
 import 'package:mapbox_api/features/reservations/services/geolocator.dart';
 import 'package:mapbox_api/features/reservations/services/parking_service.dart';
 import 'package:mapbox_api/features/reservations/models/parking.dart';
@@ -11,14 +11,10 @@ const MAP_BOX_ACCESS_TOKEN =
     'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
 
 class MapWidget extends StatefulWidget {
-  const MapWidget({
-    super.key,
-    this.mapController,
-    this.onMapTap, // 👈 NUEVO
-  });
+  const MapWidget({super.key, this.mapController, this.onMapTap});
 
   final MapController? mapController;
-  final VoidCallback? onMapTap; // 👈 NUEVO
+  final VoidCallback? onMapTap;
 
   @override
   State<MapWidget> createState() => _MapWidgetState();
@@ -159,65 +155,66 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // ⛔ Nada de Scaffold aquí: HomePage ya tiene el suyo
     if (currentPosition == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: currentPosition!,
-              initialZoom: 16,
-              onTap: (_, __) => widget.onMapTap?.call(), // 👈 minimiza el panel
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$MAP_BOX_ACCESS_TOKEN',
-                additionalOptions: {
-                  'accessToken': MAP_BOX_ACCESS_TOKEN,
-                  'id': 'mapbox/streets-v12',
-                },
-                userAgentPackageName: 'com.example.mapbox_api',
-              ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: currentPosition!,
-                    width: 40,
-                    height: 40,
-                    child: const Icon(
-                      Icons.my_location,
-                      color: Colors.green,
-                      size: 40,
-                    ),
-                  ),
-                  ..._parkingMarkers,
-                ],
-              ),
-            ],
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: currentPosition!,
+            initialZoom: 16,
+            onTap:
+                (_, __) =>
+                    widget.onMapTap?.call(), // minimiza panel en HomePage
           ),
-
-          // Controles flotantes
-          Positioned(
-            right: 16,
-            bottom: 200,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _roundBtn(icon: Icons.add, onTap: () => zoomBy(1)),
-                const SizedBox(height: 10),
-                _roundBtn(icon: Icons.remove, onTap: () => zoomBy(-1)),
-                const SizedBox(height: 10),
-                _roundBtn(icon: Icons.my_location, onTap: centerOnUser),
+          children: [
+            TileLayer(
+              urlTemplate:
+                  'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$MAP_BOX_ACCESS_TOKEN',
+              additionalOptions: {
+                'accessToken': MAP_BOX_ACCESS_TOKEN,
+                'id': 'mapbox/streets-v12',
+              },
+              userAgentPackageName: 'com.example.mapbox_api',
+            ),
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: currentPosition!,
+                  width: 40,
+                  height: 40,
+                  child: const Icon(
+                    Icons.my_location,
+                    color: Colors.green,
+                    size: 40,
+                  ),
+                ),
+                ..._parkingMarkers,
               ],
             ),
+          ],
+        ),
+
+        // Controles flotantes
+        Positioned(
+          right: 16,
+          bottom: 200,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _roundBtn(icon: Icons.add, onTap: () => zoomBy(1)),
+              const SizedBox(height: 10),
+              _roundBtn(icon: Icons.remove, onTap: () => zoomBy(-1)),
+              const SizedBox(height: 10),
+              _roundBtn(icon: Icons.my_location, onTap: centerOnUser),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

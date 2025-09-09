@@ -1,4 +1,3 @@
-// lib/modules/reservations/models/parking.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Parking {
@@ -14,8 +13,7 @@ class Parking {
   final String? imageUrl; // legacy
   final String? localImagePath; // assets
   final String? descripcion;
-
-  // 👇 nuevos
+  // nuevos
   final String? coverUrl; // portada
   final List<String> photos; // galería
 

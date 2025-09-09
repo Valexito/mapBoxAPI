@@ -1,13 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/features/user/configure_profile_page.dart';
+import 'package:mapbox_api/features/users/configure_profile_page.dart';
 // ⬇️ dialog we define below
 import 'package:mapbox_api/features/auth/components/reset_passwod_dialog.dart';
-import 'package:mapbox_api/features/auth/components/reset_passwod_dialog.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
-import 'package:mapbox_api/features/provider/become_provider_page.dart';
-import 'package:mapbox_api/features/user/notifications_page.dart';
+import 'package:mapbox_api/features/owners/pages/become_owner_page.dart';
+import 'package:mapbox_api/features/users/notifications_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -177,7 +176,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             onTap: () {
                               showDialog(
                                 context: context,
-                                builder: (_) => const BecomeProviderPage(),
+                                builder: (_) => const BecomeOwnerPage(),
                               );
                             },
                           ),

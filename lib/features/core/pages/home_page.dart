@@ -1,27 +1,28 @@
+// features/core/pages/home_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:mapbox_api/components/app_drawer.dart';
 import 'package:mapbox_api/components/home_bottom_panel.dart';
-import 'package:mapbox_api/features/core/widgets/map_widget.dart';
+import 'package:mapbox_api/features/core/providers/location_provider_dart';
+import 'package:mapbox_api/features/core/components/map_widget.dart';
 
-class HomePage extends StatefulWidget {
+// Providers (Riverpod)
+import 'package:mapbox_api/features/core/providers/map_providers.dart';
+
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
-
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+class _HomePageState extends ConsumerState<HomePage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _bottomCtrl = DraggableScrollableController();
 
-  final DraggableScrollableController _bottomCtrl =
-      DraggableScrollableController();
-  final MapController _mapController = MapController();
-
-  static const double _minSheet = 0.18; // usa el mismo valor que el panel
-
-  void _centerMap(LatLng target) => _mapController.move(target, 16);
+  static const double _minSheet = 0.18;
 
   void _minimizePanel() {
     _bottomCtrl.animateTo(
@@ -34,31 +35,50 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 1) MapController compartido (Riverpod)
+    final MapController map = ref.watch(mapControllerProvider);
+
+    // 2) (Opcional) Ubicación actual para “esperar” antes de mostrar algo o centrar una vez
+    final locAsync = ref.watch(currentLocationProvider);
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
       body: Stack(
         children: [
-          // Mapa (nos avisa cuando el usuario toca afuera del panel)
-          MapWidget(
-            mapController: _mapController,
-            onMapTap: _minimizePanel, // 👈 minimizar al tocar el mapa
+          // --- MAPA ---
+          // Si quieres esperar a la ubicación antes de pintar algo, usa locAsync.when.
+          // O pinta directo: MapWidget ya resuelve su ubic. interna. Dejo ambas formas:
+
+          // A) Pintar siempre (MapWidget ya obtiene ubicación internamente)
+          // MapWidget(mapController: map, onMapTap: _minimizePanel),
+
+          // B) Esperar a currentLocationProvider (suave UX al iniciar)
+          locAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error:
+                (_, __) =>
+                    MapWidget(mapController: map, onMapTap: _minimizePanel),
+            data:
+                (_) => MapWidget(mapController: map, onMapTap: _minimizePanel),
           ),
 
-          // Icono hamburguesa
+          // --- BOTÓN HAMBURGUESA ---
           Positioned(
             top: 40,
             left: 16,
-            child: _FloatingHamburgerIcon(
+            child: _FloatingIcon(
+              icon: Icons.menu,
               onTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
           ),
 
-          // Icono settings
+          // --- BOTÓN SETTINGS ---
           Positioned(
             top: 40,
             right: 16,
-            child: _FloatingSettingsIcon(
+            child: _FloatingIcon(
+              icon: Icons.settings,
               onTap: () {
                 showModalBottomSheet(
                   context: context,
@@ -67,53 +87,31 @@ class _HomePageState extends State<HomePage> {
                       top: Radius.circular(16),
                     ),
                   ),
-                  builder:
-                      (_) => Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          ListTile(
-                            leading: Icon(Icons.language),
-                            title: Text('Cambiar idioma'),
-                          ),
-                          ListTile(
-                            leading: Icon(Icons.brightness_6),
-                            title: Text('Cambiar tema'),
-                          ),
-                        ],
-                      ),
+                  builder: (_) => const _SettingsSheet(),
                 );
               },
             ),
           ),
 
-          // Panel inferior (sin overlay que bloquee la pantalla)
-          HomeBottomPanel(controller: _bottomCtrl, onPlaceSelected: _centerMap),
+          // --- PANEL INFERIOR ---
+          HomeBottomPanel(
+            controller: _bottomCtrl,
+            onPlaceSelected: (LatLng p) {
+              map.move(p, 16);
+              _minimizePanel();
+            },
+          ),
         ],
       ),
     );
   }
 }
 
-class _FloatingHamburgerIcon extends StatelessWidget {
-  final VoidCallback onTap;
-  const _FloatingHamburgerIcon({required this.onTap});
-  @override
-  Widget build(BuildContext context) =>
-      _FloatingIcon(icon: Icons.menu, onTap: onTap);
-}
-
-class _FloatingSettingsIcon extends StatelessWidget {
-  final VoidCallback onTap;
-  const _FloatingSettingsIcon({required this.onTap});
-  @override
-  Widget build(BuildContext context) =>
-      _FloatingIcon(icon: Icons.settings, onTap: onTap);
-}
-
 class _FloatingIcon extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   const _FloatingIcon({required this.icon, required this.onTap});
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -126,6 +124,29 @@ class _FloatingIcon extends StatelessWidget {
           boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6)],
         ),
         child: Icon(icon, color: Colors.black),
+      ),
+    );
+  }
+}
+
+class _SettingsSheet extends StatelessWidget {
+  const _SettingsSheet();
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          ListTile(
+            leading: Icon(Icons.language),
+            title: Text('Cambiar idioma'),
+          ),
+          ListTile(
+            leading: Icon(Icons.brightness_6),
+            title: Text('Cambiar tema'),
+          ),
+        ],
       ),
     );
   }

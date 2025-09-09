@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
-import 'package:mapbox_api/features/user/complete_profile_page.dart';
+import 'package:mapbox_api/features/users/complete_profile_page.dart';
 
 import '../providers/auth_providers.dart';
 

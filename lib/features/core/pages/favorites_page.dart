@@ -1,40 +1,22 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// features/core/pages/favorites_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/features/core/services/favorite_service.dart';
-import 'package:mapbox_api/features/reservations/models/parking.dart';
 import 'package:mapbox_api/features/reservations/pages/reserve_space_page.dart';
-
-class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({super.key});
-  @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
-}
+import '../providers/favorites_provider.dart';
 
 enum FavFilter { all, rating45, cheapest, spaces }
 
-class _FavoritesPageState extends State<FavoritesPage> {
+final favFilterProvider = StateProvider<FavFilter>((_) => FavFilter.all);
+
+class FavoritesPage extends ConsumerWidget {
+  const FavoritesPage({super.key});
+
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
-  FavFilter _filter = FavFilter.all;
-
-  Stream<List<_FavItem>> _streamFavorites() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-
-    return FirebaseFirestore.instance
-        .collection('favorites')
-        .where('userId', isEqualTo: uid)
-        .snapshots()
-        .map(
-          (qs) => qs.docs.map((d) => _FavItem.fromMap(d.id, d.data())).toList(),
-        );
-  }
-
-  List<_FavItem> _applyFilter(List<_FavItem> items) {
-    switch (_filter) {
+  List<FavoriteItem> _applyFilter(List<FavoriteItem> items, FavFilter f) {
+    switch (f) {
       case FavFilter.rating45:
         return items.where((e) => e.rating >= 4.5).toList()
           ..sort((a, b) => b.rating.compareTo(a.rating));
@@ -49,8 +31,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const headerH = 140.0;
+    final asyncFavs = ref.watch(favoritesStreamProvider);
+    final filter = ref.watch(favFilterProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
@@ -112,35 +96,38 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         children: [
                           _Chip(
                             label: 'All',
-                            selected: _filter == FavFilter.all,
+                            selected: filter == FavFilter.all,
                             onTap:
-                                () => setState(() => _filter = FavFilter.all),
+                                () =>
+                                    ref.read(favFilterProvider.notifier).state =
+                                        FavFilter.all,
                           ),
                           const SizedBox(width: 8),
                           _Chip(
                             label: 'Rating 4.5+',
-                            selected: _filter == FavFilter.rating45,
+                            selected: filter == FavFilter.rating45,
                             onTap:
-                                () => setState(
-                                  () => _filter = FavFilter.rating45,
-                                ),
+                                () =>
+                                    ref.read(favFilterProvider.notifier).state =
+                                        FavFilter.rating45,
                           ),
                           const SizedBox(width: 8),
                           _Chip(
                             label: 'Cheapest',
-                            selected: _filter == FavFilter.cheapest,
+                            selected: filter == FavFilter.cheapest,
                             onTap:
-                                () => setState(
-                                  () => _filter = FavFilter.cheapest,
-                                ),
+                                () =>
+                                    ref.read(favFilterProvider.notifier).state =
+                                        FavFilter.cheapest,
                           ),
                           const SizedBox(width: 8),
                           _Chip(
                             label: 'With spaces',
-                            selected: _filter == FavFilter.spaces,
+                            selected: filter == FavFilter.spaces,
                             onTap:
                                 () =>
-                                    setState(() => _filter = FavFilter.spaces),
+                                    ref.read(favFilterProvider.notifier).state =
+                                        FavFilter.spaces,
                           ),
                         ],
                       ),
@@ -154,24 +141,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -16),
-                child: StreamBuilder<List<_FavItem>>(
-                  stream: _streamFavorites(),
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snap.hasError) {
-                      return const Center(
+                child: asyncFavs.when(
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error:
+                      (_, __) => const Center(
                         child: MyText(
                           text: 'Error loading favorites',
                           variant: MyTextVariant.body,
                         ),
-                      );
-                    }
-
-                    final all = snap.data ?? const <_FavItem>[];
-                    final items = _applyFilter(all);
-
+                      ),
+                  data: (all) {
+                    final items = _applyFilter(all, filter);
                     if (items.isEmpty) {
                       return const Center(
                         child: MyText(
@@ -180,7 +161,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ),
                       );
                     }
-
                     return ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                       itemCount: items.length,
@@ -207,13 +187,11 @@ class _Chip extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     const navy = Color(0xFF1B3A57);
     final bg = selected ? navy : const Color(0xFFEFF2F6);
     final fg = selected ? Colors.white : navy;
-
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
@@ -232,15 +210,15 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _FavoriteCard extends StatefulWidget {
-  final _FavItem item;
+class _FavoriteCard extends ConsumerStatefulWidget {
+  final FavoriteItem item;
   const _FavoriteCard({required this.item});
 
   @override
-  State<_FavoriteCard> createState() => _FavoriteCardState();
+  ConsumerState<_FavoriteCard> createState() => _FavoriteCardState();
 }
 
-class _FavoriteCardState extends State<_FavoriteCard> {
+class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
   bool _fav = true;
 
   @override
@@ -250,7 +228,6 @@ class _FavoriteCardState extends State<_FavoriteCard> {
         widget.item.heroImage ??
         'https://via.placeholder.com/800x450?text=Parking';
 
-    // 👉 Toda la tarjeta es clickeable y navega a ReserveSpacePage
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
@@ -309,7 +286,7 @@ class _FavoriteCardState extends State<_FavoriteCard> {
                         setState(() => _fav = !_fav);
                         try {
                           if (!_fav) {
-                            await FavoriteService.instance.removeByDocId(
+                            await ref.read(removeFavoriteByDocIdProvider)(
                               widget.item.id,
                             );
                           }
@@ -404,91 +381,6 @@ class _ImageShimmer extends StatelessWidget {
         height: 22,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
-    );
-  }
-}
-
-class _FavItem {
-  final String id; // favorites doc id (uid_parkingId)
-  final String parkingId; // <-- lo usamos para reconstruir Parking
-  final String name;
-  final String ownerID;
-  final int price;
-  final int spaces;
-  final double rating;
-  final String? imageUrl;
-  final String? coverUrl;
-  final List<String> photos;
-  final String? descripcion;
-  final double lat;
-  final double lng;
-
-  const _FavItem({
-    required this.id,
-    required this.parkingId,
-    required this.name,
-    required this.ownerID,
-    required this.price,
-    required this.spaces,
-    required this.rating,
-    required this.lat,
-    required this.lng,
-    this.imageUrl,
-    this.coverUrl,
-    this.photos = const [],
-    this.descripcion,
-  });
-
-  // Prioridad para mostrar
-  String? get heroImage {
-    if (photos.isNotEmpty) return photos.first;
-    return coverUrl ?? imageUrl;
-  }
-
-  /// Reconstruye un `Parking` para pantallas que lo necesitan (ReserveSpacePage).
-  Parking toParking() => Parking(
-    id: parkingId,
-    lat: lat,
-    lng: lng,
-    name: name,
-    ownerID: ownerID,
-    price: price,
-    spaces: spaces,
-    rating: rating,
-    originalPrice: null,
-    imageUrl: imageUrl,
-    localImagePath: null,
-    descripcion: descripcion,
-    coverUrl: coverUrl,
-    photos: photos,
-  );
-
-  factory _FavItem.fromMap(String id, Map<String, dynamic> m) {
-    double _d(dynamic v) =>
-        (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
-    List<String> _ls(dynamic v) =>
-        (v is List)
-            ? v
-                .map((e) => e?.toString() ?? '')
-                .where((e) => e.isNotEmpty)
-                .toList()
-            : const <String>[];
-
-    return _FavItem(
-      id: id,
-      parkingId:
-          (m['parkingId'] ?? '') as String, // <- viene del FavoriteService
-      name: m['name'] ?? 'Parking',
-      ownerID: m['ownerID'] ?? '',
-      price: (m['price'] ?? 0) as int,
-      spaces: (m['spaces'] ?? 0) as int,
-      rating: _d(m['rating'] ?? 0),
-      imageUrl: m['imageUrl'] as String?,
-      coverUrl: m['coverUrl'] as String?,
-      photos: _ls(m['photos']),
-      descripcion: m['descripcion'] as String?,
-      lat: _d(m['lat']),
-      lng: _d(m['lng']),
     );
   }
 }

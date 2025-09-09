@@ -5,9 +5,8 @@ import 'package:mapbox_api/features/auth/pages/auth_gate.dart';
 import 'package:mapbox_api/firebase_options.dart';
 import 'package:mapbox_api/features/core/pages/home_page.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
-import 'package:mapbox_api/features/reservations/pages/map_navigation_page.dart';
-import 'package:mapbox_api/features/reservations/widgets/route_view_page_wrapper.dart';
-import 'package:mapbox_api/features/provider/become_provider_page.dart';
+import 'package:mapbox_api/features/reservations/components/route_view_page_wrapper.dart';
+import 'package:mapbox_api/features/owners/pages/become_owner_page.dart';
 import 'package:mapbox_api/components/map_picker_page.dart';
 
 Future<void> main() async {
@@ -41,10 +40,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/auth': (_) => const AuthGate(),
         '/homePage': (_) => const HomePage(),
-        '/becomeProvider': (_) => const BecomeProviderPage(),
+        '/becomeProvider': (_) => const BecomeOwnerPage(),
         '/mapPicker': (_) => const MapPickerPage(),
         '/routeView': (_) => const RouteViewPageWrapper(),
-        '/navigate': (_) => const MapNavigationPage(),
         '/reservationsPage': (_) => const ReservationsPage(),
       },
     );

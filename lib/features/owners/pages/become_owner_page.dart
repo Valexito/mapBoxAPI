@@ -1,9 +1,8 @@
-// become_provider_page.dart
-import 'dart:typed_data'; // <- para Uint8List (preview de imágenes)
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/features/owners/pages/become_owner_page.dart
+import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -11,15 +10,17 @@ import 'package:mapbox_api/components/ui/my_button.dart';
 import 'package:mapbox_api/components/ui/my_text.dart';
 import 'package:mapbox_api/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/pages/map_pick_page.dart';
-import 'package:mapbox_api/features/reservations/services/parking_service.dart';
 
-class BecomeProviderPage extends StatefulWidget {
-  const BecomeProviderPage({super.key});
+import 'package:mapbox_api/features/core/providers/firebase_providers.dart';
+import 'package:mapbox_api/features/owners/providers/owner_providers.dart';
+
+class BecomeOwnerPage extends ConsumerStatefulWidget {
+  const BecomeOwnerPage({super.key});
   @override
-  State<BecomeProviderPage> createState() => _BecomeProviderPageState();
+  ConsumerState<BecomeOwnerPage> createState() => _BecomeOwnerPageState();
 }
 
-class _BecomeProviderPageState extends State<BecomeProviderPage> {
+class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
   final _companyName = TextEditingController();
   final _parkingName = TextEditingController();
   final _email = TextEditingController();
@@ -28,17 +29,15 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
   final _capacity = TextEditingController();
   final _description = TextEditingController();
 
-  final _auth = FirebaseAuth.instance;
-  final _db = FirebaseFirestore.instance;
   final _formKey = GlobalKey<FormState>();
-
-  // ---- imágenes ----
   final _picker = ImagePicker();
   final List<XFile> _images = [];
 
   bool _accept = false;
   bool _sending = false;
-  LatLng? _picked; // ubicación elegida
+  LatLng? _picked;
+
+  FirebaseAuth get _auth => ref.read(firebaseAuthProvider);
 
   @override
   void initState() {
@@ -83,15 +82,13 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
       context,
       MaterialPageRoute(builder: (_) => const MapPickPage()),
     );
-    if (result != null) {
-      setState(() => _picked = result);
-    }
+    if (result != null) setState(() => _picked = result);
   }
 
   Future<void> _pickImages() async {
     final picked = await _picker.pickMultiImage(
-      imageQuality: 85, // compresión ligera
-      maxWidth: 1920, // evita originales enormes
+      imageQuality: 85,
+      maxWidth: 1920,
     );
     if (picked.isNotEmpty) {
       setState(() {
@@ -102,9 +99,7 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
     }
   }
 
-  void _removeImage(XFile img) {
-    setState(() => _images.remove(img));
-  }
+  void _removeImage(XFile img) => setState(() => _images.remove(img));
 
   Future<void> _submit() async {
     final ok = _formKey.currentState?.validate() ?? false;
@@ -125,30 +120,20 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
       final uid = _auth.currentUser?.uid;
       if (uid == null) return _showError('Debes iniciar sesión.');
 
-      // (Opcional) solicitud para tu pipeline
-      await _db.collection('provider_applications').add({
-        'uid': uid,
-        'companyName': _companyName.text.trim(),
-        'parkingName': _parkingName.text.trim(),
-        'email': _email.text.trim(),
-        'phone': _phone.text.trim(),
-        'address': _address.text.trim(),
-        'capacity': cap,
-        'description': _description.text.trim(),
-        'status': 'approved', // usa 'pending' si vas a revisar manualmente
-        'createdAt': Timestamp.now(),
-      });
-
-      // ✅ crear parking + subir imágenes (Storage + Firestore)
-      await ParkingService().createParkingWithImages(
-        ownerID: uid,
-        name: _parkingName.text.trim(),
+      final create = ref.read(createOwnerAndParkingProvider);
+      await create(
+        uid: uid,
+        companyName: _companyName.text.trim(),
+        parkingName: _parkingName.text.trim(),
+        email: _email.text.trim(),
+        phone: _phone.text.trim(),
+        address: _address.text.trim(),
+        capacity: cap,
+        description: _description.text.trim(),
         lat: _picked!.latitude,
         lng: _picked!.longitude,
-        spaces: cap,
-        descripcion: _description.text.trim(),
+        images: _images,
         price: 0,
-        images: _images, // se suben a Storage y guarda URLs en Firestore
       );
 
       if (!mounted) return;
@@ -203,7 +188,7 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                   children: [
                     const SizedBox(height: 40),
                     const MyText(
-                      text: 'BECOME A PROVIDER',
+                      text: 'BECOME AN OWNER',
                       variant: MyTextVariant.title,
                       textAlign: TextAlign.center,
                     ),
@@ -216,7 +201,7 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ---- campos ----
+                    // ==== tus campos exactamente como los tenías ====
                     const MyText(
                       text: 'Company Name',
                       variant: MyTextVariant.normal,
@@ -326,7 +311,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
 
                     const SizedBox(height: 16),
 
-                    // ---- ubicación ----
                     const MyText(
                       text: 'Ubicación del parqueo',
                       variant: MyTextVariant.normal,
@@ -356,7 +340,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
 
                     const SizedBox(height: 16),
 
-                    // ---- fotos ----
                     const MyText(
                       text: 'Fotos del parqueo (mín. 3)',
                       variant: MyTextVariant.normal,
@@ -423,7 +406,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                     ),
 
                     const SizedBox(height: 16),
-
                     Row(
                       children: [
                         Checkbox(
@@ -450,7 +432,6 @@ class _BecomeProviderPageState extends State<BecomeProviderPage> {
                 ),
               ),
             ),
-
             Positioned(
               top: 10,
               right: 10,

@@ -8,7 +8,6 @@ class RouteViewPageWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-
     return RouteViewPage(
       destination: args['destination'],
       parkingName: args['parkingName'],

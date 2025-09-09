@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/pages/home_page.dart';
-import '../../user/complete_profile_page.dart';
+import '../../users/complete_profile_page.dart';
 import '../providers/auth_providers.dart';
 import '../providers/user_profile_provider.dart';
 import 'auth_flow_page.dart';

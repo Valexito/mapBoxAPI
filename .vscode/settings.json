@@ -8,5 +8,12 @@
         ".mule": true
     },
     "java.configuration.updateBuildConfiguration": "interactive",
-    "cmake.sourceDirectory": "/Users/alexargueta/Desktop/parkComponents/mapBoxAPI/linux"
+    "cmake.sourceDirectory": "/Users/alexargueta/Desktop/parkComponents/mapBoxAPI/linux",
+    // 👇 Añade esto
+    "dart.flutterAdditionalArgs": [
+        "--dart-define-from-file=env_dev.json",
+    ],
+    "dart.flutterAdditionalArgs": [
+        "--dart-define-from-file=env_dev.json"
+    ],
 }
