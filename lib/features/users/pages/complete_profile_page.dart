@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mapbox_api/components/ui/my_button.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/components/ui/my_textfield.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/pages/home_page.dart';
 import 'package:mapbox_api/features/users/providers/user_providers.dart';
 

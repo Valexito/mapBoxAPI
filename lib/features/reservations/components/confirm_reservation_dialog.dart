@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/components/ui/my_button.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 
 class ConfirmReservationDialog {
   static Future<bool?> show(

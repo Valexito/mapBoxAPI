@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/features/core/pages/favorites_page.dart';
 import 'package:mapbox_api/features/users/pages/profile_page.dart';

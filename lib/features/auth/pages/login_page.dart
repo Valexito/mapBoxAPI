@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mapbox_api/components/ui/my_textfield.dart';
-import 'package:mapbox_api/components/ui/my_password_field.dart';
-import 'package:mapbox_api/components/ui/my_button.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_password_field.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/features/auth/components/square_tile.dart';
 import 'package:mapbox_api/features/auth/components/forgot_password_dialog.dart';
 import 'package:mapbox_api/features/auth/providers/signin_google_provider_dart';

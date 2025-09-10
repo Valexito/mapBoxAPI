@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:mapbox_api/components/ui/my_button.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/components/ui/my_textfield.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/pages/map_pick_page.dart';
 
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart';

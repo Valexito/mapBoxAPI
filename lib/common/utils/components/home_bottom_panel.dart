@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/components/ui/my_textfield.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/services/recent_searches.dart';
 
 class HomeBottomPanel extends StatefulWidget {

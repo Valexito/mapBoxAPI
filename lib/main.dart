@@ -7,7 +7,7 @@ import 'package:mapbox_api/features/core/pages/home_page.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/features/reservations/components/route_view_page_wrapper.dart';
 import 'package:mapbox_api/features/owners/pages/become_owner_page.dart';
-import 'package:mapbox_api/components/map_picker_page.dart';
+import 'package:mapbox_api/common/utils/components/map_picker_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

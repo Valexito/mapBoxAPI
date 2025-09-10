@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
-import 'package:mapbox_api/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 
 class RouteBottomInfoCard extends StatelessWidget {
   final String parkingName;

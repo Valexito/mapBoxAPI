@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/components/ui/my_button.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/features/reservations/models/parking.dart';
 import 'package:mapbox_api/features/reservations/pages/reserve_space_page.dart';
 

@@ -1,7 +1,7 @@
 // features/core/pages/favorites_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/features/reservations/pages/reserve_space_page.dart';
 import '../providers/favorites_provider.dart';
 

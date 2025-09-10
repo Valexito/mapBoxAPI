@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:mapbox_api/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/features/reservations/providers/location_providers.dart';
 import 'package:mapbox_api/features/reservations/providers/map_providers.dart';
 import 'package:mapbox_api/features/reservations/providers/directions_providers.dart';
