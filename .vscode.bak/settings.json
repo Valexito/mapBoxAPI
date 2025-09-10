@@ -1,0 +1,16 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        ".mule": true
+    },
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "cmake.sourceDirectory": "/Users/alexargueta/Desktop/mapBoxAPI/linux",
+    // 👇 Añade solo una vez
+    "dart.flutterAdditionalArgs": [
+        "--dart-define-from-file=env_dev.json"
+    ]
+}
