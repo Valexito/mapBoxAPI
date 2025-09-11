@@ -1,3 +1,4 @@
+// lib/features/reservations/pages/reservations_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
@@ -93,19 +94,19 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
                         ),
                       ),
                   data: (all) {
-                    final act =
-                        all
-                            .where((_) => true)
-                            .toList(); // si luego manejas status, separa aquí
-                    final com = <Reservation>[];
-                    final can = <Reservation>[];
+                    final active =
+                        all.where((r) => r.state == 'active').toList();
+                    final completed =
+                        all.where((r) => r.state == 'completed').toList();
+                    final cancelled =
+                        all.where((r) => r.state == 'cancelled').toList();
 
                     return TabBarView(
                       controller: _tab,
                       children: [
-                        _ResList(items: act),
-                        _ResList(items: com),
-                        _ResList(items: can),
+                        _ResList(items: active),
+                        _ResList(items: completed),
+                        _ResList(items: cancelled),
                       ],
                     );
                   },
@@ -173,6 +174,7 @@ class _ResList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (_, i) {
         final r = items[i];
+        final date = r.startedAt; // <-- reemplaza reservedAt por startedAt
         return Card(
           elevation: 3,
           child: ListTile(
@@ -180,7 +182,7 @@ class _ResList extends StatelessWidget {
             title: Text(r.parkingName),
             subtitle: Text('Espacio: ${r.spaceNumber}'),
             trailing: Text(
-              _fmtDate(r.reservedAt),
+              _fmtDate(date),
               style: const TextStyle(fontSize: 12),
             ),
           ),

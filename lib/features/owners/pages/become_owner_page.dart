@@ -1,4 +1,3 @@
-// lib/features/owners/pages/become_owner_page.dart
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,7 @@ import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/pages/map_pick_page.dart';
 
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart';
-import 'package:mapbox_api/features/owners/providers/owner_providers.dart';
+import 'package:mapbox_api/features/owners/providers/owners_providers.dart';
 
 class BecomeOwnerPage extends ConsumerStatefulWidget {
   const BecomeOwnerPage({super.key});
@@ -28,6 +27,7 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
   final _address = TextEditingController();
   final _capacity = TextEditingController();
   final _description = TextEditingController();
+  final _pricePerHour = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
@@ -58,23 +58,8 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
     _address.dispose();
     _capacity.dispose();
     _description.dispose();
+    _pricePerHour.dispose();
     super.dispose();
-  }
-
-  void _showError(String msg) {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            content: MyText(text: msg, variant: MyTextVariant.body),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-    );
   }
 
   Future<void> _pickOnMap() async {
@@ -101,6 +86,22 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
 
   void _removeImage(XFile img) => setState(() => _images.remove(img));
 
+  void _showError(String msg) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            content: MyText(text: msg, variant: MyTextVariant.body),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+    );
+  }
+
   Future<void> _submit() async {
     final ok = _formKey.currentState?.validate() ?? false;
     if (!ok) return;
@@ -110,6 +111,11 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
     final cap = int.tryParse(_capacity.text.trim());
     if (cap == null || cap <= 0)
       return _showError('Capacidad debe ser un número > 0.');
+
+    final price = int.tryParse(_pricePerHour.text.trim());
+    if (price == null || price < 0)
+      return _showError('Precio por hora inválido.');
+
     if (_picked == null)
       return _showError('Selecciona la ubicación del parqueo en el mapa.');
     if (_images.length < 3)
@@ -133,7 +139,7 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
         lat: _picked!.latitude,
         lng: _picked!.longitude,
         images: _images,
-        price: 0,
+        price: price,
       );
 
       if (!mounted) return;
@@ -201,7 +207,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ==== tus campos exactamente como los tenías ====
                     const MyText(
                       text: 'Company Name',
                       variant: MyTextVariant.normal,
@@ -212,8 +217,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       controller: _companyName,
                       hintText: 'Enter Company Name',
                       prefixIcon: Icons.business_outlined,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
@@ -227,8 +230,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       controller: _parkingName,
                       hintText: 'Enter Parking Name',
                       prefixIcon: Icons.local_parking_outlined,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
@@ -243,8 +244,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       hintText: 'Company Email',
                       keyboardType: TextInputType.emailAddress,
                       prefixIcon: Icons.mail_outline,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
@@ -259,8 +258,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       hintText: 'Enter your 10 digit mobile number',
                       keyboardType: TextInputType.phone,
                       prefixIcon: Icons.phone_outlined,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
@@ -274,8 +271,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       controller: _address,
                       hintText: 'Street, number, city',
                       prefixIcon: Icons.place_outlined,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
@@ -290,8 +285,30 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       hintText: 'Number of spaces available',
                       keyboardType: TextInputType.number,
                       prefixIcon: Icons.format_list_numbered_outlined,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null || n <= 0) return 'Inválido';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    const MyText(
+                      text: 'Price per hour (Q)',
+                      variant: MyTextVariant.normal,
+                      fontSize: 13,
+                    ),
+                    const SizedBox(height: 6),
+                    MyTextField(
+                      controller: _pricePerHour,
+                      hintText: 'e.g. 10',
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.attach_money_outlined,
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null || n < 0) return 'Inválido';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 14),
 
@@ -305,12 +322,9 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                       controller: _description,
                       hintText: 'Short description (optional)',
                       prefixIcon: Icons.notes_outlined,
-                      obscureText: false,
-                      margin: EdgeInsets.zero,
                     ),
 
                     const SizedBox(height: 16),
-
                     const MyText(
                       text: 'Ubicación del parqueo',
                       variant: MyTextVariant.normal,
@@ -339,7 +353,6 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
                     ),
 
                     const SizedBox(height: 16),
-
                     const MyText(
                       text: 'Fotos del parqueo (mín. 3)',
                       variant: MyTextVariant.normal,

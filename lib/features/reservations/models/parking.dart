@@ -6,7 +6,7 @@ class Parking {
   final double lng;
   final String name;
   final String ownerID;
-  final int price;
+  final int price; // legacy: por noche (si lo usas en UI, se mantiene)
   final int spaces;
   final double? rating;
   final double? originalPrice;
@@ -16,6 +16,9 @@ class Parking {
   // nuevos
   final String? coverUrl; // portada
   final List<String> photos; // galería
+
+  /// NUEVO: precio por hora que usaremos para reservas y cobro
+  final int pricePerHour;
 
   Parking({
     required this.id,
@@ -32,6 +35,7 @@ class Parking {
     this.descripcion,
     this.coverUrl,
     this.photos = const [],
+    this.pricePerHour = 0, // default seguro
   });
 
   factory Parking.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -65,6 +69,8 @@ class Parking {
       descripcion: data['descripcion'],
       coverUrl: data['coverUrl'],
       photos: _ls(data['photos']),
+      pricePerHour:
+          (data['pricePerHour'] ?? data['price'] ?? 0) as int, // fallback
     );
   }
 
@@ -98,6 +104,25 @@ class Parking {
       descripcion: data['descripcion'],
       coverUrl: data['coverUrl'],
       photos: _ls(data['photos']),
+      pricePerHour:
+          (data['pricePerHour'] ?? data['price'] ?? 0) as int, // fallback
     );
   }
+
+  Map<String, dynamic> toMap() => {
+    'lat': lat,
+    'lng': lng,
+    'name': name,
+    'ownerID': ownerID,
+    'price': price,
+    'spaces': spaces,
+    'rating': rating,
+    'originalPrice': originalPrice,
+    'imageUrl': imageUrl,
+    'localImagePath': localImagePath,
+    'descripcion': descripcion,
+    'coverUrl': coverUrl,
+    'photos': photos,
+    'pricePerHour': pricePerHour,
+  };
 }

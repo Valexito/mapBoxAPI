@@ -1,4 +1,3 @@
-// lib/features/core/providers/firebase_providers.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -16,7 +15,6 @@ final storageProvider = Provider<FirebaseStorage>((ref) {
   return FirebaseStorage.instance;
 });
 
-/// Usuario actual (sincrónico)
 final currentUserProvider = Provider<User?>((ref) {
   return ref.watch(firebaseAuthProvider).currentUser;
 });

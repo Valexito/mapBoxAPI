@@ -1,12 +1,11 @@
+// lib/features/reservations/pages/reserve_space_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
-import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
 import 'package:mapbox_api/features/reservations/models/parking.dart';
-import 'package:mapbox_api/features/reservations/models/reservation.dart';
 import 'package:mapbox_api/features/reservations/providers/reservations_providers.dart';
 import 'package:mapbox_api/features/reservations/components/confirm_reservation_dialog.dart';
 
@@ -22,12 +21,6 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
-  late final int totalSpaces =
-      (widget.parking.spaces is int && widget.parking.spaces > 0)
-          ? widget.parking.spaces
-          : 20;
-
-  final List<int> occupiedSpaces = [2, 5, 6, 9, 13];
   int? selectedSpace;
 
   Future<void> _confirmReservation() async {
@@ -39,28 +32,30 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
     );
 
     if (ok == true && selectedSpace != null) {
-      final uid = ref.read(firebaseAuthProvider).currentUser!.uid;
+      try {
+        // NUEVO: usamos el provider que hace la transacción (reserva + ocupa)
+        final reserve = ref.read(reserveSpaceProvider);
+        final reservationId = await reserve(
+          parkingId: widget.parking.id,
+          parkingName: widget.parking.name,
+          spaceNumber: selectedSpace!,
+        );
 
-      final r = Reservation(
-        userId: uid,
-        parkingId: widget.parking.id,
-        parkingName: widget.parking.name,
-        spaceNumber: selectedSpace!,
-        reservedAt: DateTime.now(),
-        lat: widget.parking.lat,
-        lng: widget.parking.lng,
-      );
-
-      await ref.read(createReservationProvider)(r);
-
-      if (!mounted) return;
-      Navigator.of(context).pushNamed(
-        '/routeView',
-        arguments: {
-          'destination': LatLng(widget.parking.lat, widget.parking.lng),
-          'parkingName': widget.parking.name,
-        },
-      );
+        if (!mounted) return;
+        Navigator.of(context).pushNamed(
+          '/routeView',
+          arguments: {
+            'destination': LatLng(widget.parking.lat, widget.parking.lng),
+            'parkingName': widget.parking.name,
+            'reservationId': reservationId,
+          },
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('No se pudo reservar: $e')));
+      }
     }
   }
 
@@ -74,6 +69,9 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
             : w >= 380
             ? 4
             : 3;
+
+    // Stream en tiempo real de spaces del parking
+    final spacesAsync = ref.watch(parkingSpacesProvider(widget.parking.id));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
@@ -199,36 +197,73 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: totalSpaces,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: cross,
-                                  mainAxisSpacing: 10,
-                                  crossAxisSpacing: 10,
-                                  childAspectRatio: 1.05,
+
+                          // GRID con estados en tiempo real
+                          spacesAsync.when(
+                            loading:
+                                () => const Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
-                            itemBuilder: (_, idx) {
-                              final num = idx + 1;
-                              final occupied = occupiedSpaces.contains(num);
-                              final selected = selectedSpace == num;
-                              return _SpaceTile(
-                                number: num,
-                                occupied: occupied,
-                                selected: selected,
-                                onTap:
-                                    occupied
-                                        ? null
-                                        : () => setState(
-                                          () =>
-                                              selectedSpace =
-                                                  selected ? null : num,
-                                        ),
+                            error:
+                                (e, _) => Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Center(
+                                    child: MyText(
+                                      text: 'Error cargando espacios: $e',
+                                      variant: MyTextVariant.bodyBold,
+                                    ),
+                                  ),
+                                ),
+                            data: (spaces) {
+                              final total =
+                                  spaces.isEmpty
+                                      ? (widget.parking.spaces > 0
+                                          ? widget.parking.spaces
+                                          : 20)
+                                      : spaces.length;
+
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: total,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: cross,
+                                      mainAxisSpacing: 10,
+                                      crossAxisSpacing: 10,
+                                      childAspectRatio: 1.05,
+                                    ),
+                                itemBuilder: (_, idx) {
+                                  final num = idx + 1;
+                                  final space =
+                                      spaces.length >= num
+                                          ? spaces[idx]
+                                          : null; // por si no sembraste todos aún
+                                  final occupied =
+                                      (space?.status ?? 'free') != 'free';
+                                  final selected = selectedSpace == num;
+
+                                  return _SpaceTile(
+                                    number: num,
+                                    occupied: occupied,
+                                    selected: selected,
+                                    onTap:
+                                        occupied
+                                            ? null
+                                            : () => setState(
+                                              () =>
+                                                  selectedSpace =
+                                                      selected ? null : num,
+                                            ),
+                                  );
+                                },
                               );
                             },
                           ),
+
                           const SizedBox(height: 14),
                           Container(
                             padding: const EdgeInsets.symmetric(
