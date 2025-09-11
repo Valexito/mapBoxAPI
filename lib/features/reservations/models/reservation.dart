@@ -7,11 +7,11 @@ class Reservation {
   final String parkingName;
   final int spaceNumber;
 
-  /// Campo “real” que guardamos; la UI puede leer `startedAt` como alias.
+  /// Guardamos reservedAt; la UI puede leer startedAt (alias).
   final DateTime reservedAt;
 
   final DateTime? endedAt;
-  final String state; // "active", "completed", "cancelled"
+  final String state; // "active" | "completed" | "cancelled"
   final int? pricePerHour;
   final int? amount;
   final int? durationMinutes;
@@ -30,10 +30,8 @@ class Reservation {
     this.durationMinutes,
   });
 
-  /// Alias para no romper UIs que esperan `startedAt`
   DateTime get startedAt => reservedAt;
 
-  /// Lee desde Firestore (DocumentSnapshot)
   factory Reservation.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     return Reservation(
@@ -42,7 +40,6 @@ class Reservation {
       parkingId: data['parkingId'] ?? '',
       parkingName: data['parkingName'] ?? '',
       spaceNumber: (data['spaceNumber'] ?? 0) as int,
-      // acepta reservedAt o startedAt
       reservedAt:
           ((data['reservedAt'] ?? data['startedAt']) as Timestamp? ??
                   Timestamp.now())
@@ -58,30 +55,6 @@ class Reservation {
     );
   }
 
-  /// Lee desde un Map simple (por si usas d.data())
-  factory Reservation.fromMap(Map<String, dynamic> data, {String id = ''}) {
-    return Reservation(
-      id: id,
-      userId: data['userId'] ?? '',
-      parkingId: data['parkingId'] ?? '',
-      parkingName: data['parkingName'] ?? '',
-      spaceNumber: (data['spaceNumber'] ?? 0) as int,
-      reservedAt:
-          ((data['reservedAt'] ?? data['startedAt']) as Timestamp? ??
-                  Timestamp.now())
-              .toDate(),
-      endedAt:
-          data['endedAt'] != null
-              ? (data['endedAt'] as Timestamp).toDate()
-              : null,
-      state: data['state'] ?? 'active',
-      pricePerHour: (data['pricePerHour'] as num?)?.toInt(),
-      amount: (data['amount'] as num?)?.toInt(),
-      durationMinutes: (data['durationMinutes'] as num?)?.toInt(),
-    );
-  }
-
-  /// Guarda en Firestore: escribimos ambos nombres por compatibilidad
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -89,7 +62,7 @@ class Reservation {
       'parkingName': parkingName,
       'spaceNumber': spaceNumber,
       'reservedAt': Timestamp.fromDate(reservedAt),
-      'startedAt': Timestamp.fromDate(reservedAt), // alias
+      'startedAt': Timestamp.fromDate(reservedAt), // alias para compatibilidad
       'endedAt': endedAt != null ? Timestamp.fromDate(endedAt!) : null,
       'state': state,
       'pricePerHour': pricePerHour,

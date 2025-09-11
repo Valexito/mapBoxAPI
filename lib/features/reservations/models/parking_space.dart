@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ParkingSpace {
-  final String id;
-
-  /// 'free' | 'occupied'
-  final String status;
+  final String id; // "1", "2", ...
+  final String status; // "free" | "occupied"
   final String? currentReservationId;
   final DateTime? updatedAt;
 

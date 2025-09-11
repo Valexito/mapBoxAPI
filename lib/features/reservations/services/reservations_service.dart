@@ -1,4 +1,3 @@
-// lib/features/reservations/services/reservations_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mapbox_api/features/reservations/models/reservation.dart';
 
@@ -12,12 +11,27 @@ class ReservationsService {
         .where('userId', isEqualTo: userId)
         .orderBy('reservedAt', descending: true)
         .snapshots()
-        .map(
-          (qs) => qs.docs.map((d) => Reservation.fromMap(d.data())).toList(),
-        );
+        .map((qs) {
+          return qs.docs
+              .map(
+                (d) => Reservation.fromDoc(
+                  d as DocumentSnapshot<Map<String, dynamic>>,
+                ),
+              )
+              .toList();
+        });
   }
 
-  Future<void> createReservation(Reservation r) async {
-    await _db.collection('reservations').add(r.toMap());
+  Future<String> createReservation(Reservation r) async {
+    final doc = await _db.collection('reservations').add(r.toMap());
+    return doc.id;
+  }
+
+  Future<void> updateReservation(String id, Map<String, dynamic> delta) async {
+    await _db.collection('reservations').doc(id).update(delta);
+  }
+
+  Future<void> deleteReservation(String id) async {
+    await _db.collection('reservations').doc(id).delete();
   }
 }
