@@ -1,4 +1,3 @@
-// lib/features/reservations/pages/reserve_space_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -33,7 +32,6 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
 
     if (ok == true && selectedSpace != null) {
       try {
-        // NUEVO: usamos el provider que hace la transacción (reserva + ocupa)
         final reserve = ref.read(reserveSpaceProvider);
         final reservationId = await reserve(
           parkingId: widget.parking.id,
@@ -70,7 +68,7 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
             ? 4
             : 3;
 
-    // Stream en tiempo real de spaces del parking
+    // Stream en tiempo real de spaces del parking (ahora Mapa<int, ParkingSpace>)
     final spacesAsync = ref.watch(parkingSpacesProvider(widget.parking.id));
 
     return Scaffold(
@@ -217,13 +215,14 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                                     ),
                                   ),
                                 ),
-                            data: (spaces) {
+                            data: (spacesMap) {
+                              // cantidad total mostrada
                               final total =
-                                  spaces.isEmpty
-                                      ? (widget.parking.spaces > 0
-                                          ? widget.parking.spaces
-                                          : 20)
-                                      : spaces.length;
+                                  widget.parking.spaces > 0
+                                      ? widget.parking.spaces
+                                      : (spacesMap.isNotEmpty
+                                          ? spacesMap.length
+                                          : 20);
 
                               return GridView.builder(
                                 shrinkWrap: true,
@@ -238,13 +237,23 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                                     ),
                                 itemBuilder: (_, idx) {
                                   final num = idx + 1;
-                                  final space =
-                                      spaces.length >= num
-                                          ? spaces[idx]
-                                          : null; // por si no sembraste todos aún
+
+                                  // Toma el espacio por su número de documento
+                                  final space = spacesMap[num];
                                   final occupied =
                                       (space?.status ?? 'free') != 'free';
                                   final selected = selectedSpace == num;
+
+                                  // Si se ocupó en tiempo real, deselecciona
+                                  if (selected && occupied) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                          if (mounted)
+                                            setState(
+                                              () => selectedSpace = null,
+                                            );
+                                        });
+                                  }
 
                                   return _SpaceTile(
                                     number: num,
