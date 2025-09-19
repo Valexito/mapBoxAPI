@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/navy_header.dart';
 import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
 import 'package:mapbox_api/features/reservations/components/reservations_details_sheet.dart';
 import 'package:mapbox_api/features/reservations/models/reservation.dart';
@@ -14,7 +15,6 @@ class ReservationsPage extends ConsumerStatefulWidget {
 
 class _ReservationsPageState extends ConsumerState<ReservationsPage>
     with SingleTickerProviderStateMixin {
-  static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
   static const bg = Color(0xFFF2F4F7);
 
@@ -41,7 +41,6 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
       );
     }
 
-    // ¡Ojo! Este es un StreamProvider<List<Reservation>>.
     final asyncList = ref.watch(userReservationsProvider);
 
     return Scaffold(
@@ -49,7 +48,19 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
       body: SafeArea(
         child: Column(
           children: [
-            _Header(navyTop: navyTop, navyBottom: navyBottom),
+            // Header consistente
+            const NavyHeader(
+              height: 150,
+              roundedBottom: false,
+              children: [
+                MyText(
+                  text: 'MIS RESERVACIONES',
+                  variant: MyTextVariant.title,
+                  textAlign: TextAlign.center,
+                  customColor: Colors.white,
+                ),
+              ],
+            ),
 
             Transform.translate(
               offset: const Offset(0, -28),
@@ -66,7 +77,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
                   loading:
                       () => const Center(child: CircularProgressIndicator()),
                   error:
-                      (e, __) => Center(
+                      (e, __) => const Center(
                         child: MyText(
                           text: 'Error loading reservations',
                           variant: MyTextVariant.bodyBold,
@@ -74,11 +85,11 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
                       ),
                   data: (all) {
                     final active =
-                        all.where((r) => r.state == 'active').toList();
+                        all.where((r) => r.state == 'Acitvo').toList();
                     final completed =
-                        all.where((r) => r.state == 'completed').toList();
+                        all.where((r) => r.state == 'Completado').toList();
                     final cancelled =
-                        all.where((r) => r.state == 'cancelled').toList();
+                        all.where((r) => r.state == 'Cancelado').toList();
 
                     return TabBarView(
                       controller: _tab,
@@ -94,40 +105,6 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.navyTop, required this.navyBottom});
-  final Color navyTop;
-  final Color navyBottom;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 150,
-      width: double.infinity,
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [navyTop, navyBottom],
-              ),
-            ),
-          ),
-          const Center(
-            child: MyText(
-              text: 'MY RESERVATIONS',
-              variant: MyTextVariant.title,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -208,10 +185,30 @@ class _ReservationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const navyBottom = _ReservationsPageState.navyBottom;
     final dt = r.startedAt;
-    final day = _two(dt.day);
-    final mon = _monthShort(dt.month);
-    final time = _fmtTime(dt);
-    final priceText = _priceDisplay(r);
+    final day = dt.day.toString().padLeft(2, '0');
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final mon = months[(dt.month - 1).clamp(0, 11)];
+    final hh = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final mm = dt.minute.toString().padLeft(2, '0');
+    final am = dt.hour < 12 ? 'AM' : 'PM';
+    final time = '$hh:$mm $am';
+    final priceText =
+        r.amount != null
+            ? 'Q${r.amount}'
+            : (r.pricePerHour != null ? 'Q${r.pricePerHour}/h' : 'Q—');
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -231,7 +228,6 @@ class _ReservationCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              // fecha
               Container(
                 width: 56,
                 height: 64,
@@ -242,6 +238,7 @@ class _ReservationCard extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    const SizedBox(height: 2),
                     MyText(
                       text: mon.toUpperCase(),
                       variant: MyTextVariant.bodyBold,
@@ -257,8 +254,6 @@ class _ReservationCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,8 +297,6 @@ class _ReservationCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // precio
               MyText(
                 text: priceText,
                 variant: MyTextVariant.bodyBold,
@@ -317,38 +310,5 @@ class _ReservationCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String _two(int n) => n.toString().padLeft(2, '0');
-
-  static String _monthShort(int m) {
-    const s = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return s[(m - 1).clamp(0, 11)];
-  }
-
-  static String _fmtTime(DateTime dt) {
-    final hh = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final mm = _two(dt.minute);
-    final am = dt.hour < 12 ? 'AM' : 'PM';
-    return '$hh:$mm $am';
-  }
-
-  static String _priceDisplay(Reservation r) {
-    if (r.amount != null) return 'Q${r.amount}';
-    if (r.pricePerHour != null) return 'Q${r.pricePerHour}/h';
-    return 'Q—';
   }
 }
