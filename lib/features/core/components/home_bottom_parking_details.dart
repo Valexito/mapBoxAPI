@@ -1,11 +1,18 @@
+// lib/features/home/widgets/home_parking_detail_bottom_sheet.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/features/core/providers/favorites_provider.dart';
 import 'package:mapbox_api/features/reservations/models/parking.dart';
 import 'package:mapbox_api/features/reservations/pages/reserve_space_page.dart';
 
-class HomeParkingDetailBottomSheet extends StatefulWidget {
+class HomeParkingDetailBottomSheet extends ConsumerStatefulWidget {
   final Parking parking;
+
+  /// Props legacy (opcionales). Si las pasas, las usamos como “estado inicial”
+  /// mientras el Stream resuelve por 1ª vez.
   final bool isFavorite;
   final VoidCallback? onToggleFavorite;
 
@@ -17,12 +24,12 @@ class HomeParkingDetailBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<HomeParkingDetailBottomSheet> createState() =>
+  ConsumerState<HomeParkingDetailBottomSheet> createState() =>
       _HomeParkingDetailBottomSheetState();
 }
 
 class _HomeParkingDetailBottomSheetState
-    extends State<HomeParkingDetailBottomSheet> {
+    extends ConsumerState<HomeParkingDetailBottomSheet> {
   static const navyBottom = Color(0xFF1B3A57);
 
   late final PageController _pager;
@@ -36,7 +43,6 @@ class _HomeParkingDetailBottomSheetState
     final cover = widget.parking.coverUrl ?? widget.parking.imageUrl;
     if (g.isEmpty && (cover ?? '').isNotEmpty) g.add(cover!);
 
-    // Como backup final, un placeholder visible
     if (g.isEmpty) {
       g.add('https://via.placeholder.com/800x400?text=Parking');
     }
@@ -57,10 +63,29 @@ class _HomeParkingDetailBottomSheetState
 
   String _money(num v) => 'Q${v.toStringAsFixed(v % 1 == 0 ? 0 : 2)}';
 
+  Future<void> _toggleFavorite(bool toFav) async {
+    try {
+      await ref.read(toggleFavoriteProvider)(toFav: toFav, p: widget.parking);
+      widget.onToggleFavorite?.call(); // por si quieres refrescar algo externo
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo actualizar favorito: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final gallery = _gallery;
     final hasMultiple = gallery.length > 1;
+
+    // Escucha en tiempo real si este parking es favorito
+    final favAsync = ref.watch(isFavoriteStreamProvider(widget.parking.id));
+    final isFav = favAsync.maybeWhen(
+      data: (v) => v,
+      orElse: () => widget.isFavorite, // fallback hasta que cargue el stream
+    );
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
@@ -81,13 +106,11 @@ class _HomeParkingDetailBottomSheetState
                     onPageChanged: (i) => setState(() => _page = i),
                     itemBuilder: (_, i) {
                       final url = gallery[i];
-                      // Si preferías assets locales, podrías chequear localImagePath aquí.
                       return Image.network(
                         url,
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        // Evita feo crash cuando el emulador no resuelve host
                         errorBuilder: (_, __, ___) => const _ImageFallback(),
                         loadingBuilder: (c, child, progress) {
                           if (progress == null) return child;
@@ -118,14 +141,22 @@ class _HomeParkingDetailBottomSheetState
                     right: 12,
                     child: Row(
                       children: [
-                        _RoundIcon(
-                          icon:
-                              widget.isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                          color:
-                              widget.isFavorite ? navyBottom : Colors.black38,
-                          onTap: widget.onToggleFavorite ?? () {},
+                        Material(
+                          color: Colors.white,
+                          shape: const CircleBorder(),
+                          elevation: 3,
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () => _toggleFavorite(!isFav),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                isFav ? Icons.favorite : Icons.favorite_border,
+                                color: isFav ? Colors.red : navyBottom,
+                                size: 22,
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         _RoundIcon(
@@ -185,6 +216,8 @@ class _HomeParkingDetailBottomSheetState
                   const SizedBox(height: 12),
                   Row(
                     children: [
+                      // precio “legacy” por noche (como lo tenías).
+                      // si quieres por hora: usa widget.parking.pricePerHour si existe
                       MyText(
                         text: '${_money(widget.parking.price)} por noche',
                         variant: MyTextVariant.bodyBold,

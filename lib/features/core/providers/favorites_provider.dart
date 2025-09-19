@@ -1,4 +1,3 @@
-// features/core/providers/favorites_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,7 +12,7 @@ final firebaseAuthProviderCore = Provider<FirebaseAuth>(
   (_) => FirebaseAuth.instance,
 );
 
-// Modelo visible para la UI (antes era _FavItem privado en la page)
+// Modelo para UI
 class FavoriteItem {
   final String id;
   final String parkingId;
@@ -94,7 +93,7 @@ class FavoriteItem {
   }
 }
 
-// Servicio como provider (inyectable)
+// Servicio como provider
 final favoriteServiceProvider = Provider<FavoriteService>(
   (_) => FavoriteService.instance,
 );
@@ -116,7 +115,7 @@ final favoritesStreamProvider = StreamProvider<List<FavoriteItem>>((ref) {
       );
 });
 
-// Acciones (remove, toggle, etc.)
+// Acciones (remove por docId)
 final removeFavoriteByDocIdProvider = Provider<Future<void> Function(String)>((
   ref,
 ) {
@@ -124,7 +123,7 @@ final removeFavoriteByDocIdProvider = Provider<Future<void> Function(String)>((
   return (docId) => svc.removeByDocId(docId);
 });
 
-// Stream<bool> pero con family para cualquier parkingId
+// ¿Es favorito? (en tiempo real) para un parkingId
 final isFavoriteStreamProvider = StreamProvider.family<bool, String>((
   ref,
   parkingId,
@@ -133,7 +132,7 @@ final isFavoriteStreamProvider = StreamProvider.family<bool, String>((
   return svc.isFavoriteStream(parkingId);
 });
 
-// Acción toggle (add/remove) optimista
+// Toggle add/remove
 final toggleFavoriteProvider =
     Provider<Future<void> Function({required bool toFav, required Parking p})>((
       ref,

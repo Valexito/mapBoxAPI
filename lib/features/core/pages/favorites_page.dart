@@ -1,9 +1,8 @@
-// features/core/pages/favorites_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/features/core/providers/favorites_provider.dart';
 import 'package:mapbox_api/features/reservations/pages/reserve_space_page.dart';
-import '../providers/favorites_provider.dart';
 
 enum FavFilter { all, rating45, cheapest, spaces }
 
@@ -210,28 +209,20 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _FavoriteCard extends ConsumerStatefulWidget {
+class _FavoriteCard extends ConsumerWidget {
   final FavoriteItem item;
   const _FavoriteCard({required this.item});
 
   @override
-  ConsumerState<_FavoriteCard> createState() => _FavoriteCardState();
-}
-
-class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
-  bool _fav = true;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const navy = Color(0xFF1B3A57);
     final heroImg =
-        widget.item.heroImage ??
-        'https://via.placeholder.com/800x450?text=Parking';
+        item.heroImage ?? 'https://via.placeholder.com/800x450?text=Parking';
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
-        final parking = widget.item.toParking();
+        final parking = item.toParking();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => ReserveSpacePage(parking: parking)),
@@ -255,53 +246,63 @@ class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
                     child: Image.network(
                       heroImg,
                       fit: BoxFit.cover,
-                      errorBuilder:
-                          (_, __, ___) => Container(
-                            color: const Color(0xFFE7ECF3),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey,
-                            ),
-                          ),
+                      errorBuilder: (_, __, ___) => const _ImageFallback(),
                       loadingBuilder:
                           (c, child, p) =>
                               p == null ? child : const _ImageShimmer(),
                     ),
                   ),
                 ),
+                // Corazón controlado por datos reales (stream)
                 Positioned(
                   right: 10,
                   top: 10,
-                  child: Material(
-                    color: Colors.white,
-                    shape: const CircleBorder(),
-                    elevation: 2,
-                    child: IconButton(
-                      icon: Icon(
-                        _fav ? Icons.favorite : Icons.favorite_border,
-                        color: _fav ? Colors.red : navy,
-                      ),
-                      onPressed: () async {
-                        setState(() => _fav = !_fav);
-                        try {
-                          if (!_fav) {
-                            await ref.read(removeFavoriteByDocIdProvider)(
-                              widget.item.id,
-                            );
-                          }
-                        } catch (_) {
-                          setState(() => _fav = !_fav);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('No se pudo actualizar favorito'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
+                  child: Consumer(
+                    builder: (_, r, __) {
+                      final favStream = r.watch(
+                        isFavoriteStreamProvider(item.parkingId),
+                      );
+                      final isFav = favStream.maybeWhen(
+                        data: (v) => v,
+                        orElse:
+                            () => true, // si está en la lista, asumimos true
+                      );
+                      return Material(
+                        color: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        child: IconButton(
+                          icon: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            color: isFav ? Colors.red : navy,
+                          ),
+                          onPressed: () async {
+                            try {
+                              if (isFav) {
+                                await r.read(removeFavoriteByDocIdProvider)(
+                                  item.id,
+                                );
+                              } else {
+                                await r.read(toggleFavoriteProvider)(
+                                  toFav: true,
+                                  p: item.toParking(),
+                                );
+                              }
+                            } catch (_) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'No se pudo actualizar favorito',
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -317,7 +318,7 @@ class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
                     children: [
                       Expanded(
                         child: MyText(
-                          text: widget.item.name,
+                          text: item.name,
                           variant: MyTextVariant.bodyBold,
                           fontSize: 15,
                         ),
@@ -325,7 +326,7 @@ class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
                       const Icon(Icons.star, size: 18, color: Colors.amber),
                       const SizedBox(width: 4),
                       MyText(
-                        text: widget.item.rating.toStringAsFixed(1),
+                        text: item.rating.toStringAsFixed(1),
                         variant: MyTextVariant.body,
                         fontSize: 13,
                       ),
@@ -337,7 +338,7 @@ class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
                       const Icon(Icons.attach_money, size: 16, color: navy),
                       const SizedBox(width: 6),
                       MyText(
-                        text: 'Q${widget.item.price}',
+                        text: 'Q${item.price}',
                         variant: MyTextVariant.body,
                         fontSize: 13,
                       ),
@@ -345,16 +346,16 @@ class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
                       const Icon(Icons.local_parking, size: 16, color: navy),
                       const SizedBox(width: 6),
                       MyText(
-                        text: 'Spaces: ${widget.item.spaces}',
+                        text: 'Spaces: ${item.spaces}',
                         variant: MyTextVariant.bodyMuted,
                         fontSize: 12,
                       ),
                     ],
                   ),
-                  if ((widget.item.descripcion ?? '').isNotEmpty) ...[
+                  if ((item.descripcion ?? '').isNotEmpty) ...[
                     const SizedBox(height: 6),
                     MyText(
-                      text: widget.item.descripcion!,
+                      text: item.descripcion!,
                       variant: MyTextVariant.bodyMuted,
                       fontSize: 12,
                     ),
@@ -372,15 +373,23 @@ class _FavoriteCardState extends ConsumerState<_FavoriteCard> {
 class _ImageShimmer extends StatelessWidget {
   const _ImageShimmer();
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFE9EDF3),
-      alignment: Alignment.center,
-      child: const SizedBox(
-        width: 22,
-        height: 22,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    color: const Color(0xFFE9EDF3),
+    alignment: Alignment.center,
+    child: const SizedBox(
+      width: 22,
+      height: 22,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    ),
+  );
+}
+
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback();
+  @override
+  Widget build(BuildContext context) => Container(
+    color: const Color(0xFFE7ECF3),
+    alignment: Alignment.center,
+    child: const Icon(Icons.image_not_supported, color: Colors.grey),
+  );
 }

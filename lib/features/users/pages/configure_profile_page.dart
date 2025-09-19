@@ -111,6 +111,7 @@ class _ConfigureProfilePageState extends ConsumerState<ConfigureProfilePage> {
     final photoUrl = user?.photoURL;
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Edit Profile')),
       backgroundColor: const Color(0xFFF2F4F7),
       body: SafeArea(
         child: SingleChildScrollView(
