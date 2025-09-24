@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/navy_header.dart';
+
 import 'package:mapbox_api/features/users/pages/configure_profile_page.dart';
 import 'package:mapbox_api/features/users/pages/notifications_page.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
@@ -10,13 +13,6 @@ import 'package:mapbox_api/features/owners/pages/become_owner_page.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
-
-  static const pageBg = Color(0xFFF2F4F7);
-  static const cardDivider = Color(0xFFE9EEFF);
-  static const iconCircle = Color(0xFFEFF2F6);
-  static const textPrimary = Color(0xFF111827);
-  static const textSecondary = Color(0xFF6B7280);
-  static const navyBottom = Color(0xFF1B3A57);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +24,7 @@ class ProfilePage extends ConsumerWidget {
             : 'TU NOMBRE';
 
     return Scaffold(
-      backgroundColor: pageBg,
+      backgroundColor: AppColors.pageBg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.zero,
@@ -75,7 +71,7 @@ class ProfilePage extends ConsumerWidget {
                                 child: const Icon(
                                   Icons.person,
                                   size: 54,
-                                  color: navyBottom,
+                                  color: AppColors.navyBottom,
                                 ),
                               ),
                     ),
@@ -102,13 +98,13 @@ class ProfilePage extends ConsumerWidget {
                         elevation: 8,
                         shadowColor: Colors.black12,
                         borderRadius: BorderRadius.circular(22),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
                             vertical: 6,
                             horizontal: 6,
                           ),
                           child: Column(
-                            children: const [
+                            children: [
                               _ActionItem(
                                 icon: Icons.lock_outline,
                                 title: 'Contraseña',
@@ -148,10 +144,10 @@ class ProfilePage extends ConsumerWidget {
                         elevation: 6,
                         shadowColor: Colors.black12,
                         borderRadius: BorderRadius.circular(22),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
+                        child: const Padding(
+                          padding: EdgeInsets.all(12),
                           child: Column(
-                            children: const [
+                            children: [
                               _Shortcut(
                                 icon: Icons.bookmark_added_outlined,
                                 title: 'Mis reservaciones',
@@ -190,7 +186,7 @@ class _Divider extends StatelessWidget {
   const _Divider();
   @override
   Widget build(BuildContext context) =>
-      const Divider(height: 1, thickness: 1, color: ProfilePage.cardDivider);
+      const Divider(height: 1, thickness: 1, color: AppColors.cardDivider);
 }
 
 enum _Go { configure, notifications, reservations, owner, signout, none }
@@ -201,6 +197,7 @@ class _ActionItem extends StatelessWidget {
     required this.title,
     required this.go,
   });
+
   final IconData icon;
   final String title;
   final _Go go;
@@ -239,14 +236,16 @@ class _ActionItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         child: Row(
           children: [
+            // 🔧 Un solo círculo con el ícono dentro
             Container(
               width: 38,
               height: 38,
               decoration: const BoxDecoration(
-                color: ProfilePage.iconCircle,
+                color: AppColors.iconCircle,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 20, color: ProfilePage.navyBottom),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 20, color: AppColors.navyBottom),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -254,14 +253,14 @@ class _ActionItem extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   fontSize: 15,
-                  color: ProfilePage.textPrimary,
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             const Icon(
               Icons.chevron_right_rounded,
-              color: ProfilePage.textSecondary,
+              color: AppColors.textSecondary,
             ),
           ],
         ),
@@ -304,7 +303,7 @@ class _Shortcut extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: ProfilePage.iconCircle,
+      color: AppColors.iconCircle,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () => _handleTap(context),
@@ -317,10 +316,10 @@ class _Shortcut extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: const BoxDecoration(
-                  color: ProfilePage.iconCircle,
+                  color: AppColors.iconCircle,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 18, color: ProfilePage.navyBottom),
+                child: Icon(icon, size: 18, color: AppColors.navyBottom),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -328,14 +327,14 @@ class _Shortcut extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     fontSize: 14.5,
-                    color: ProfilePage.textPrimary,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               const Icon(
                 Icons.chevron_right_rounded,
-                color: ProfilePage.textSecondary,
+                color: AppColors.textSecondary,
               ),
             ],
           ),

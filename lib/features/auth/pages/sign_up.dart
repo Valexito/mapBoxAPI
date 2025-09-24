@@ -10,8 +10,7 @@ import 'package:mapbox_api/features/users/pages/complete_profile_page.dart';
 import '../providers/auth_providers.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
-  final VoidCallback
-  onBackToLogin; // <-- renombrado (coincide con AuthFlowPage)
+  final VoidCallback onBackToLogin;
   const SignUpPage({super.key, required this.onBackToLogin});
 
   @override
@@ -124,24 +123,25 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     ),
                     const SizedBox(height: 24),
 
+                    // === User Name ===
                     const MyText(
                       text: 'User Name',
-                      variant: MyTextVariant.normal,
+                      variant: MyTextVariant.bodyMuted,
                       fontSize: 13,
                     ),
                     const SizedBox(height: 6),
                     MyTextField(
                       controller: _username,
                       hintText: 'Enter User Name',
-                      prefixIcon: Icons.person_outline,
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
+                    // === Email ===
                     const MyText(
                       text: 'Email',
-                      variant: MyTextVariant.normal,
+                      variant: MyTextVariant.bodyMuted,
                       fontSize: 13,
                     ),
                     const SizedBox(height: 6),
@@ -149,15 +149,15 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       controller: _email,
                       hintText: 'Enter Email',
                       keyboardType: TextInputType.emailAddress,
-                      prefixIcon: Icons.mail_outline,
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
+                    // === Mobile ===
                     const MyText(
                       text: 'Mobile Number',
-                      variant: MyTextVariant.normal,
+                      variant: MyTextVariant.bodyMuted,
                       fontSize: 13,
                     ),
                     const SizedBox(height: 6),
@@ -165,38 +165,37 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       controller: _mobile,
                       hintText: 'Enter your 10 digit mobile number',
                       keyboardType: TextInputType.phone,
-                      prefixIcon: Icons.phone_outlined,
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
+                    // === Password ===
                     const MyText(
                       text: 'Password',
-                      variant: MyTextVariant.normal,
+                      variant: MyTextVariant.bodyMuted,
                       fontSize: 13,
                     ),
                     const SizedBox(height: 6),
                     MyTextField(
                       controller: _password,
                       hintText: 'Password should be in 8-15 characters',
-                      obscureText: true,
-                      prefixIcon: Icons.lock_outline,
+                      obscureText: true, // sin icono de ojo
                       margin: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 14),
 
+                    // === Confirm Password ===
                     const MyText(
                       text: 'Confirm Password',
-                      variant: MyTextVariant.normal,
+                      variant: MyTextVariant.bodyMuted,
                       fontSize: 13,
                     ),
                     const SizedBox(height: 6),
                     MyTextField(
                       controller: _confirm,
                       hintText: 'Repeat the Password',
-                      obscureText: true,
-                      prefixIcon: Icons.lock_outline,
+                      obscureText: true, // sin icono de ojo
                       margin: EdgeInsets.zero,
                     ),
 
@@ -223,10 +222,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
               top: 10,
               right: 10,
               child: IconButton(
-                onPressed:
-                    _loading
-                        ? null
-                        : widget.onBackToLogin, // <-- coincide con AuthFlowPage
+                onPressed: _loading ? null : widget.onBackToLogin,
                 icon: const Icon(Icons.close, color: navyDark, size: 26),
               ),
             ),

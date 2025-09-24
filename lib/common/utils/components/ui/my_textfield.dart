@@ -1,6 +1,6 @@
-// lib/components/ui/my_textfield.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'app_styles.dart';
 
 class MyTextField extends StatefulWidget {
   final TextEditingController controller;
@@ -18,7 +18,8 @@ class MyTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
 
   // Decoración
-  final IconData? prefixIcon;
+  final IconData? prefixIcon; // opcional (omítelo en Login/SignUp)
+  final bool circularPrefix;
   final Widget? suffix;
   final EdgeInsetsGeometry? margin;
   final String? labelText;
@@ -28,7 +29,7 @@ class MyTextField extends StatefulWidget {
   // Form
   final String? Function(String?)? validator;
 
-  // 👇 NUEVO: permite inyectar tu propio FocusNode y escuchar cambios
+  // Focus externo
   final FocusNode? focusNode;
   final ValueChanged<bool>? onFocusChange;
 
@@ -46,14 +47,15 @@ class MyTextField extends StatefulWidget {
     this.maxLength,
     this.inputFormatters,
     this.prefixIcon,
+    this.circularPrefix = false,
     this.suffix,
     this.margin,
     this.labelText,
     this.helperText,
     this.errorText,
     this.validator,
-    this.focusNode, // NUEVO
-    this.onFocusChange, // NUEVO
+    this.focusNode,
+    this.onFocusChange,
   });
 
   @override
@@ -61,80 +63,89 @@ class MyTextField extends StatefulWidget {
 }
 
 class _MyTextFieldState extends State<MyTextField> {
-  static const primary = Color(0xFF1976D2);
-  static const navy = Color.fromARGB(255, 37, 119, 206);
-
   late final FocusNode _focusNode;
-  bool _ownsFocusNode = false;
+  bool _ownsFocus = false;
 
   bool get _active =>
       _focusNode.hasFocus || widget.controller.text.trim().isNotEmpty;
 
-  void _handleFocusChanged() {
-    setState(() {}); // para actualizar color/estilo
-    if (widget.onFocusChange != null) {
-      widget.onFocusChange!(_focusNode.hasFocus);
-    }
+  void _onFocus() {
+    setState(() {});
+    widget.onFocusChange?.call(_focusNode.hasFocus);
   }
 
   @override
   void initState() {
     super.initState();
-    // Usa el focusNode externo si viene; si no, crea uno propio
-    if (widget.focusNode != null) {
-      _focusNode = widget.focusNode!;
-      _ownsFocusNode = false;
-    } else {
-      _focusNode = FocusNode();
-      _ownsFocusNode = true;
-    }
-    _focusNode.addListener(_handleFocusChanged);
+    _focusNode = widget.focusNode ?? FocusNode();
+    _ownsFocus = widget.focusNode == null;
+    _focusNode.addListener(_onFocus);
     widget.controller.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _focusNode.removeListener(_handleFocusChanged);
-    if (_ownsFocusNode) {
-      _focusNode.dispose(); // solo si lo creamos aquí
-    }
+    _focusNode.removeListener(_onFocus);
+    if (_ownsFocus) _focusNode.dispose();
     super.dispose();
+  }
+
+  Widget? _buildPrefix() {
+    if (widget.prefixIcon == null) return null;
+    final Color color = _active ? AppColors.navyBottom : AppColors.primary;
+
+    if (!widget.circularPrefix) {
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(start: 8.0, end: 4.0),
+        child: Icon(widget.prefixIcon, color: color),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 8.0, end: 6.0),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: const BoxDecoration(
+          color: AppColors.iconCircle,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(widget.prefixIcon, size: 16, color: color),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _active ? navy : primary;
+    final theme = Theme.of(context).inputDecorationTheme;
 
-    final baseDecoration = InputDecoration(
-      labelText: widget.labelText,
-      helperText: widget.helperText,
-      errorText: widget.errorText,
-      hintText: widget.hintText,
-      hintStyle: TextStyle(color: Colors.grey[500]),
-      prefixIcon:
-          widget.prefixIcon == null
-              ? null
-              : Icon(widget.prefixIcon, color: color),
-      suffixIcon: widget.suffix,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: navy, width: 1.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: navy, width: 1.8),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    // Texto como Drawer: fuerte al enfocar, más suave al salir
+    final textStyle = TextStyle(
+      color: _active ? AppColors.textPrimary : AppColors.textSecondary,
+      fontWeight: FontWeight.w600,
+      fontSize: 15,
     );
 
-    final textFieldWidget =
-        widget.validator == null
+    // Usamos InputBorder.none para asegurarnos de que NO salga la línea negra
+    final decoration = const InputDecoration(border: InputBorder.none)
+        .applyDefaults(theme)
+        .copyWith(
+          labelText: widget.labelText,
+          helperText: widget.helperText,
+          errorText: widget.errorText,
+          hintText: widget.hintText,
+          filled: true,
+          fillColor: _active ? Colors.white : AppColors.formFieldBg,
+          prefixIcon: _buildPrefix(),
+          suffixIcon: widget.suffix,
+          // padding un poco mayor para que se vean más "anchos/altos"
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 16, // ↑
+            horizontal: 18, // ↑
+          ),
+        );
+
+    final field =
+        (widget.validator == null)
             ? TextField(
               controller: widget.controller,
               focusNode: _focusNode,
@@ -147,13 +158,9 @@ class _MyTextFieldState extends State<MyTextField> {
               maxLines: widget.maxLines,
               maxLength: widget.maxLength,
               inputFormatters: widget.inputFormatters,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              cursorColor: color,
-              decoration: baseDecoration,
+              style: textStyle,
+              cursorColor: AppColors.navyBottom,
+              decoration: decoration,
             )
             : TextFormField(
               controller: widget.controller,
@@ -168,33 +175,41 @@ class _MyTextFieldState extends State<MyTextField> {
               maxLength: widget.maxLength,
               inputFormatters: widget.inputFormatters,
               validator: widget.validator,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              cursorColor: color,
-              decoration: baseDecoration,
+              style: textStyle,
+              cursorColor: AppColors.navyBottom,
+              decoration: decoration,
             );
 
+    // Contenedor que da el "borde-sombra" azul al enfocar (glow)
     return Padding(
       padding: widget.margin ?? const EdgeInsets.symmetric(horizontal: 25),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(AppDims.radiusLg),
+          // “glow” + fino borde en navy al enfocar
+          border:
+              _active
+                  ? Border.all(
+                    color: AppColors.navyBottom.withOpacity(0.45),
+                    width: 1,
+                  )
+                  : null,
           boxShadow:
               _active
                   ? [
                     BoxShadow(
-                      color: navy.withOpacity(0.3),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                      blurStyle: BlurStyle.inner,
+                      color: AppColors.navyBottom.withOpacity(0.28),
+                      blurRadius: 20,
+                      spreadRadius: 0.5,
+                      offset: const Offset(0, 6),
                     ),
                   ]
                   : [],
         ),
-        child: textFieldWidget,
+        child: field,
       ),
     );
   }

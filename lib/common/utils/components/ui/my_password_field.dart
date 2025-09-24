@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'app_styles.dart';
 
 class MyPasswordField extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
   final EdgeInsetsGeometry? margin;
 
-  // extras para formularios
   final String? labelText;
   final String? helperText;
   final String? errorText;
@@ -27,8 +27,6 @@ class MyPasswordField extends StatefulWidget {
 }
 
 class _MyPasswordFieldState extends State<MyPasswordField> {
-  static const primary = Color(0xFF1976D2);
-  static const navy = Color.fromARGB(255, 37, 119, 206);
   final _focusNode = FocusNode();
   bool _obscure = true;
 
@@ -50,79 +48,85 @@ class _MyPasswordFieldState extends State<MyPasswordField> {
 
   @override
   Widget build(BuildContext context) {
-    final color = _active ? navy : primary;
+    final theme = Theme.of(context).inputDecorationTheme;
 
-    final baseDecoration = InputDecoration(
-      labelText: widget.labelText,
-      helperText: widget.helperText,
-      errorText: widget.errorText,
-      hintText: widget.hintText,
-      hintStyle: TextStyle(color: Colors.grey[500]),
-      prefixIcon: Icon(Icons.lock_outline, color: color),
-      suffixIcon: IconButton(
-        onPressed: () => setState(() => _obscure = !_obscure),
-        icon: Icon(
-          _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-          color: color,
-        ),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(
-          color: navy,
-          width: 1.5,
-        ), // contorno por defecto
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: navy, width: 1.8),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final textStyle = TextStyle(
+      color: _active ? AppColors.textPrimary : AppColors.textSecondary,
+      fontWeight: FontWeight.w600,
+      fontSize: 15,
     );
 
-    final field = TextField(
-      controller: widget.controller,
-      focusNode: _focusNode,
-      obscureText: _obscure,
-      style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 14),
-      cursorColor: color,
-      decoration: baseDecoration,
-    );
+    final decoration = const InputDecoration(border: InputBorder.none)
+        .applyDefaults(theme)
+        .copyWith(
+          labelText: widget.labelText,
+          helperText: widget.helperText,
+          errorText: widget.errorText,
+          hintText: widget.hintText,
+          filled: true,
+          fillColor: _active ? Colors.white : AppColors.formFieldBg,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 16, // ↑
+            horizontal: 18, // ↑
+          ),
+          suffixIcon: IconButton(
+            onPressed: () => setState(() => _obscure = !_obscure),
+            icon: Icon(
+              _obscure
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              color: AppColors.navyBottom,
+            ),
+          ),
+        );
 
-    final formField = TextFormField(
-      controller: widget.controller,
-      focusNode: _focusNode,
-      obscureText: _obscure,
-      validator: widget.validator,
-      style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 14),
-      cursorColor: color,
-      decoration: baseDecoration,
-    );
+    final field =
+        (widget.validator == null)
+            ? TextField(
+              controller: widget.controller,
+              focusNode: _focusNode,
+              obscureText: _obscure,
+              style: textStyle,
+              cursorColor: AppColors.navyBottom,
+              decoration: decoration,
+            )
+            : TextFormField(
+              controller: widget.controller,
+              focusNode: _focusNode,
+              obscureText: _obscure,
+              validator: widget.validator,
+              style: textStyle,
+              cursorColor: AppColors.navyBottom,
+              decoration: decoration,
+            );
 
     return Padding(
       padding: widget.margin ?? const EdgeInsets.symmetric(horizontal: 25),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDims.radiusLg),
+          border:
+              _active
+                  ? Border.all(
+                    color: AppColors.navyBottom.withOpacity(0.45),
+                    width: 1,
+                  )
+                  : null,
           boxShadow:
               _active
                   ? [
                     BoxShadow(
-                      color: navy.withOpacity(0.3),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                      blurStyle: BlurStyle.inner, // sombra interna
+                      color: AppColors.navyBottom.withOpacity(0.28),
+                      blurRadius: 20,
+                      spreadRadius: 0.5,
+                      offset: const Offset(0, 6),
                     ),
                   ]
                   : [],
         ),
-        child: widget.validator == null ? field : formField,
+        child: field,
       ),
     );
   }
