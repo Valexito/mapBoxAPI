@@ -48,16 +48,35 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
       body: SafeArea(
         child: Column(
           children: [
-            // Header consistente
-            const NavyHeader(
-              height: 150,
-              roundedBottom: false,
+            // Header + botón volver "<"
+            Stack(
               children: [
-                MyText(
-                  text: 'MIS RESERVACIONES',
-                  variant: MyTextVariant.title,
-                  textAlign: TextAlign.center,
-                  customColor: Colors.white,
+                const NavyHeader(
+                  height: 150,
+                  roundedBottom: false,
+                  children: [
+                    MyText(
+                      text: 'MIS RESERVACIONES',
+                      variant: MyTextVariant.title,
+                      textAlign: TextAlign.center,
+                      customColor: Colors.white,
+                    ),
+                  ],
+                ),
+                Positioned(
+                  left: 6,
+                  top: 35,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.white,
+                        size: 35,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Regresar',
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -77,19 +96,21 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
                   loading:
                       () => const Center(child: CircularProgressIndicator()),
                   error:
-                      (e, __) => const Center(
+                      (e, __) => Center(
                         child: MyText(
-                          text: 'Error loading reservations',
+                          text: 'Error loading reservations: $e',
                           variant: MyTextVariant.bodyBold,
                         ),
                       ),
                   data: (all) {
+                    String norm(String? s) => (s ?? '').toLowerCase().trim();
+
                     final active =
-                        all.where((r) => r.state == 'Acitvo').toList();
+                        all.where((r) => norm(r.state) == 'active').toList();
                     final completed =
-                        all.where((r) => r.state == 'Completado').toList();
+                        all.where((r) => norm(r.state) == 'completed').toList();
                     final cancelled =
-                        all.where((r) => r.state == 'Cancelado').toList();
+                        all.where((r) => norm(r.state) == 'cancelled').toList();
 
                     return TabBarView(
                       controller: _tab,
@@ -144,9 +165,9 @@ class _SegmentTabs extends StatelessWidget {
             fontSize: 14,
           ),
           tabs: const [
-            Tab(text: 'Active'),
-            Tab(text: 'Completed'),
-            Tab(text: 'Cancelled'),
+            Tab(text: 'Activo'),
+            Tab(text: 'Completado'),
+            Tab(text: 'Cancelado'),
           ],
         ),
       ),
@@ -264,13 +285,18 @@ class _ReservationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Row(
-                      children: [
-                        const Icon(
+                      children: const [
+                        Icon(
                           Icons.access_time,
                           size: 16,
                           color: Colors.black54,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const SizedBox(width: 22),
                         MyText(
                           text: time,
                           variant: MyTextVariant.body,
@@ -280,13 +306,18 @@ class _ReservationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Row(
-                      children: [
-                        const Icon(
+                      children: const [
+                        Icon(
                           Icons.local_parking,
                           size: 16,
                           color: Colors.black54,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const SizedBox(width: 22),
                         MyText(
                           text: 'Espacio ${r.spaceNumber}',
                           variant: MyTextVariant.body,

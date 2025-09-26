@@ -30,69 +30,92 @@ class ProfilePage extends ConsumerWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              NavyHeader(
-                height: 240,
-                roundedBottom: false,
-                trailing: SizedBox(
-                  height: 30,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ConfigureProfilePage(),
-                        ),
-                      );
-                    },
-                    child: const Text('Editar perfil'),
-                  ),
-                ),
+              // ===== Header navy + botón volver "<" + "Editar perfil" =====
+              Stack(
                 children: [
-                  Container(
-                    width: 92,
-                    height: 92,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 6),
+                  NavyHeader(
+                    height: 240,
+                    roundedBottom: false,
+                    trailing: SizedBox(
+                      height: 30,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ConfigureProfilePage(),
+                            ),
+                          );
+                        },
+                        child: const Text('Editar perfil'),
+                      ),
+                    ),
+                    children: [
+                      Container(
+                        width: 92,
+                        height: 92,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child:
-                          photoUrl != null
-                              ? Image.network(photoUrl, fit: BoxFit.cover)
-                              : Container(
-                                color: Colors.white,
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 54,
-                                  color: AppColors.navyBottom,
-                                ),
-                              ),
+                        child: ClipOval(
+                          child:
+                              photoUrl != null
+                                  ? Image.network(photoUrl, fit: BoxFit.cover)
+                                  : Container(
+                                    color: Colors.white,
+                                    child: const Icon(
+                                      Icons.person,
+                                      size: 54,
+                                      color: AppColors.navyBottom,
+                                    ),
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      MyText(
+                        text: name,
+                        variant: MyTextVariant.title,
+                        customColor: Colors.white,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
+                  // Botón volver "<" alineado como en otras páginas
+                  Positioned(
+                    left: 6,
+                    top: 35,
+                    child: SafeArea(
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Colors.white,
+                          size: 35,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Regresar',
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  MyText(
-                    text: name,
-                    variant: MyTextVariant.title,
-                    customColor: Colors.white,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
                 ],
               ),
 
+              // ===== Cuerpo =====
               Transform.translate(
                 offset: const Offset(0, -27),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
+                      // Bloque de acciones
                       Material(
                         color: Colors.white,
                         elevation: 8,
@@ -139,6 +162,8 @@ class ProfilePage extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Atajos
                       Material(
                         color: Colors.white,
                         elevation: 6,
@@ -236,7 +261,6 @@ class _ActionItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         child: Row(
           children: [
-            // 🔧 Un solo círculo con el ícono dentro
             Container(
               width: 38,
               height: 38,

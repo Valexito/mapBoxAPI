@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/common/utils/components/ui/navy_header.dart';
 import 'package:mapbox_api/features/core/providers/favorites_provider.dart';
 import 'package:mapbox_api/features/reservations/pages/reserve_space_page.dart';
 
@@ -11,8 +13,8 @@ final favFilterProvider = StateProvider<FavFilter>((_) => FavFilter.all);
 class FavoritesPage extends ConsumerWidget {
   const FavoritesPage({super.key});
 
-  static const navyTop = Color(0xFF0D1B2A);
-  static const navyBottom = Color(0xFF1B3A57);
+  static const bg = Color(0xFFF2F4F7);
+  static const navy = Color(0xFF1B3A57);
 
   List<FavoriteItem> _applyFilter(List<FavoriteItem> items, FavFilter f) {
     switch (f) {
@@ -31,54 +33,48 @@ class FavoritesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const headerH = 140.0;
     final asyncFavs = ref.watch(favoritesStreamProvider);
     final filter = ref.watch(favFilterProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      backgroundColor: bg,
       body: SafeArea(
         child: Column(
           children: [
-            // ===== HEADER =====
-            SizedBox(
-              height: headerH,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [navyTop, navyBottom],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 4,
-                    top: 0,
-                    bottom: 0,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  const Center(
-                    child: MyText(
-                      text: 'FAVORITES',
+            // ===== HEADER estilo Navy + botón volver "<" =====
+            Stack(
+              children: [
+                const NavyHeader(
+                  height: 150,
+                  roundedBottom: false,
+                  children: [
+                    MyText(
+                      text: 'FAVORITOS',
                       variant: MyTextVariant.title,
                       textAlign: TextAlign.center,
+                      customColor: Colors.white,
+                    ),
+                  ],
+                ),
+                Positioned(
+                  left: 6,
+                  top: 35, // mismo offset que usaste en Reservations
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.white,
+                        size: 35,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Regresar',
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            // ===== FILTER CHIPS =====
+            // ===== FILTROS =====
             Transform.translate(
               offset: const Offset(0, -20),
               child: Padding(
@@ -94,7 +90,7 @@ class FavoritesPage extends ConsumerWidget {
                       child: Row(
                         children: [
                           _Chip(
-                            label: 'All',
+                            label: 'Todos',
                             selected: filter == FavFilter.all,
                             onTap:
                                 () =>
@@ -112,7 +108,7 @@ class FavoritesPage extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           _Chip(
-                            label: 'Cheapest',
+                            label: 'Más barato',
                             selected: filter == FavFilter.cheapest,
                             onTap:
                                 () =>
@@ -121,7 +117,7 @@ class FavoritesPage extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           _Chip(
-                            label: 'With spaces',
+                            label: 'Con espacios',
                             selected: filter == FavFilter.spaces,
                             onTap:
                                 () =>
@@ -136,7 +132,7 @@ class FavoritesPage extends ConsumerWidget {
               ),
             ),
 
-            // ===== LIST =====
+            // ===== LISTA =====
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -16),
@@ -155,7 +151,7 @@ class FavoritesPage extends ConsumerWidget {
                     if (items.isEmpty) {
                       return const Center(
                         child: MyText(
-                          text: 'No favorites yet',
+                          text: 'No tienes favoritos aún',
                           variant: MyTextVariant.bodyMuted,
                         ),
                       );
@@ -186,9 +182,10 @@ class _Chip extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
+
   @override
   Widget build(BuildContext context) {
-    const navy = Color(0xFF1B3A57);
+    const navy = FavoritesPage.navy;
     final bg = selected ? navy : const Color(0xFFEFF2F6);
     final fg = selected ? Colors.white : navy;
     return InkWell(
@@ -215,7 +212,7 @@ class _FavoriteCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const navy = Color(0xFF1B3A57);
+    const navy = FavoritesPage.navy;
     final heroImg =
         item.heroImage ?? 'https://via.placeholder.com/800x450?text=Parking';
 

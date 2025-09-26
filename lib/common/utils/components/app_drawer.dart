@@ -4,20 +4,44 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+
+// Páginas
+import 'package:mapbox_api/features/core/pages/configurations_page.dart';
+import 'package:mapbox_api/features/core/pages/frequent_questions_page.dart';
+import 'package:mapbox_api/features/core/pages/legal_information_page.dart';
+import 'package:mapbox_api/features/core/pages/report_problem_page.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/features/core/pages/favorites_page.dart';
 import 'package:mapbox_api/features/users/pages/profile_page.dart';
 
-// 👇 Importa el stream del usuario y las acciones de auth
+// Auth
 import 'package:mapbox_api/features/auth/providers/auth_providers.dart'
     show authUserStreamProvider, authActionsProvider;
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
-  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
-    // cierra el drawer para evitar que quede montado con datos viejos
+  // Navega y reabre el drawer al volver
+  Future<void> _openFromDrawer(BuildContext context, Widget page) async {
+    // Captura el Scaffold antes de cerrar el drawer
+    final scaffoldState = Scaffold.maybeOf(context);
+
+    // Cierra el drawer
     Navigator.of(context).pop();
+
+    // Navega a la página
+    await Navigator.of(
+      scaffoldState!.context,
+    ).push(MaterialPageRoute(builder: (_) => page));
+
+    // Cuando el usuario vuelve, reabre el drawer
+    if (scaffoldState.mounted) {
+      scaffoldState.openDrawer();
+    }
+  }
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    Navigator.of(context).pop(); // cierra el drawer
     await ref.read(authActionsProvider).signOut();
     if (!context.mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/auth', (_) => false);
@@ -27,7 +51,6 @@ class AppDrawer extends ConsumerWidget {
     if (u == null) return null;
     String? url = u.photoURL;
 
-    // Si no hay en user principal, intenta con los proveedores vinculados
     if (url == null || url.isEmpty) {
       for (final p in u.providerData) {
         final pUrl = p.photoURL;
@@ -39,7 +62,6 @@ class AppDrawer extends ConsumerWidget {
     }
     if (url == null) return null;
 
-    // Mejora tamaño típico de Google
     if (url.contains('googleusercontent.com') && url.contains('/s')) {
       url = url.replaceFirst(RegExp(r'/s\d+-'), '/s200-');
     }
@@ -48,7 +70,6 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 🔴 AHORA escuchamos el stream del usuario
     final userAsync = ref.watch(authUserStreamProvider);
 
     return userAsync.when(
@@ -93,7 +114,6 @@ class AppDrawer extends ConsumerWidget {
                       child: ClipOval(
                         child:
                             (photoUrl != null)
-                                // clave atada al uid -> fuerza recarga al cambiar de usuario
                                 ? Image.network(
                                   photoUrl,
                                   key: ValueKey(user?.uid),
@@ -135,46 +155,62 @@ class AppDrawer extends ConsumerWidget {
                     _DrawerItem(
                       icon: Icons.bookmark_added_outlined,
                       label: 'Mis reservaciones',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ReservationsPage(),
+                      onTap:
+                          () => _openFromDrawer(
+                            context,
+                            const ReservationsPage(),
                           ),
-                        );
-                      },
                     ),
                     _DrawerItem(
                       icon: Icons.favorite_outline,
                       label: 'Favoritos',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FavoritesPage(),
-                          ),
-                        );
-                      },
+                      onTap:
+                          () => _openFromDrawer(context, const FavoritesPage()),
                     ),
                     _DrawerItem(
                       icon: Icons.person_outline,
                       label: 'Perfil',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfilePage(),
-                          ),
-                        );
-                      },
+                      onTap:
+                          () => _openFromDrawer(context, const ProfilePage()),
                     ),
                     _DrawerItem(
                       icon: Icons.settings_outlined,
                       label: 'Configuraciones',
-                      onTap: () => Navigator.pop(context),
+                      onTap:
+                          () => _openFromDrawer(
+                            context,
+                            const ConfigurationsPage(),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    _DrawerItem(
+                      icon: Icons.help_outline,
+                      label: 'Preguntas frecuentes',
+                      onTap:
+                          () => _openFromDrawer(
+                            context,
+                            const FrequentQuestionsPage(),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    _DrawerItem(
+                      icon: Icons.gavel_outlined,
+                      label: 'Información legal',
+                      onTap:
+                          () => _openFromDrawer(
+                            context,
+                            const LegalInformationPage(),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    _DrawerItem(
+                      icon: Icons.report_gmailerrorred_outlined,
+                      label: 'Reportar un problema',
+                      onTap:
+                          () => _openFromDrawer(
+                            context,
+                            const ReportProblemPage(),
+                          ),
                     ),
                     const SizedBox(height: 8),
                     _DrawerItem(
