@@ -69,7 +69,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const MyText(
-              text: 'FORGOT PASSWORD',
+              text: '¿OLVIDASTE TU CONTRASEÑA?',
               variant: MyTextVariant.title,
               textAlign: TextAlign.center,
             ),
@@ -85,7 +85,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
             // ÍCONO DENTRO DEL TEXTFIELD (igual al login)
             MyTextField(
               controller: _emailCtrl,
-              hintText: 'Nombre de usuario o email',
+              hintText: 'Ingresa tu correo electrónico',
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
               obscureText: false,

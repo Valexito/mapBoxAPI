@@ -1,16 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'auth_providers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-final firestoreProvider = Provider<FirebaseFirestore>((_) {
-  return FirebaseFirestore.instance;
-});
-
-/// true si existe users/{uid}
+/// Indica si el usuario **ya tiene** documento de perfil en `users/{uid}`.
 final hasUserProfileProvider = FutureProvider<bool>((ref) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return false;
-  final db = ref.watch(firestoreProvider);
-  final doc = await db.collection('users').doc(user.uid).get();
-  return doc.exists;
+  final u = FirebaseAuth.instance.currentUser;
+  if (u == null) return false;
+  final snap =
+      await FirebaseFirestore.instance.collection('users').doc(u.uid).get();
+  return snap.exists;
 });

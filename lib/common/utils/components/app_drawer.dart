@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-
 import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
-
+import 'package:mapbox_api/features/core/providers/firebase_providers.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
 import 'package:mapbox_api/features/core/pages/favorites_page.dart';
 import 'package:mapbox_api/features/users/pages/profile_page.dart';
@@ -22,6 +21,8 @@ class AppDrawer extends ConsumerWidget {
   String? _bestPhotoUrl(fb.User? u) {
     if (u == null) return null;
     String? url = u.photoURL;
+
+    // Buscar foto en los providers si no hay en el user principal
     if (url == null || url.isEmpty) {
       for (final p in u.providerData) {
         if (p.photoURL != null && p.photoURL!.isNotEmpty) {
@@ -31,6 +32,8 @@ class AppDrawer extends ConsumerWidget {
       }
     }
     if (url == null) return null;
+
+    // Mejora de tamaño para Google photos
     if (url.contains('googleusercontent.com') && url.contains('/s')) {
       url = url.replaceFirst(RegExp(r'/s\d+-'), '/s200-');
     }
@@ -39,6 +42,7 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ✅ Se re-renderiza automáticamente cuando cambia el usuario
     final user = ref.watch(currentUserProvider);
     final photoUrl = _bestPhotoUrl(user);
 
@@ -76,7 +80,12 @@ class AppDrawer extends ConsumerWidget {
                   child: ClipOval(
                     child:
                         (photoUrl != null)
-                            ? Image.network(photoUrl, fit: BoxFit.cover)
+                            // 🔑 key atado al uid para romper caché si cambia de usuario
+                            ? Image.network(
+                              photoUrl,
+                              key: ValueKey(user?.uid),
+                              fit: BoxFit.cover,
+                            )
                             : const Icon(
                               Icons.person,
                               size: 54,
@@ -105,13 +114,11 @@ class AppDrawer extends ConsumerWidget {
               ],
             ),
           ),
-
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
                 const SizedBox(height: 8),
-
                 _DrawerItem(
                   icon: Icons.bookmark_added_outlined,
                   label: 'Mis reservaciones',
@@ -152,7 +159,6 @@ class AppDrawer extends ConsumerWidget {
                   label: 'Configuraciones',
                   onTap: () => Navigator.pop(context),
                 ),
-
                 const SizedBox(height: 8),
                 _DrawerItem(
                   icon: Icons.logout_outlined,

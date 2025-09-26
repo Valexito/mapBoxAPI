@@ -1,31 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
-/// Instancia de FirebaseAuth (inyectable/testeable).
-final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
-  return FirebaseAuth.instance;
-});
+// Trae la instancia de FirebaseAuth desde core (no redefinir aquí).
+import 'package:mapbox_api/features/core/providers/firebase_providers.dart'
+    show firebaseAuthProvider;
 
-/// Stream del usuario autenticado (null si está deslogueado).
+/// 🔄 Emite en login/logout y también cuando cambian perfil/token.
 final authUserStreamProvider = StreamProvider<User?>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
-  return auth.authStateChanges();
+  return auth.userChanges(); // incluye cambios de perfil e idToken
 });
 
-/// Lectura sincrónica del usuario actual (puede ser null).
-final currentUserProvider = Provider<User?>((ref) {
-  return ref.watch(firebaseAuthProvider).currentUser;
-});
-
-/// Acciones comunes de auth (login/logout, etc.).
+/// Acciones de autenticación centralizadas.
 final authActionsProvider = Provider<_AuthActions>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
   return _AuthActions(auth);
 });
 
 class _AuthActions {
-  final FirebaseAuth _auth;
   _AuthActions(this._auth);
+  final FirebaseAuth _auth;
 
   Future<UserCredential> signInWithEmailPassword({
     required String email,
@@ -44,5 +39,13 @@ class _AuthActions {
     );
   }
 
-  Future<void> signOut() => _auth.signOut();
+  /// Cierra sesión en Firebase y también en Google si aplica.
+  Future<void> signOut() async {
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {
+      // Ignora si no había sesión de Google.
+    }
+    await _auth.signOut();
+  }
 }

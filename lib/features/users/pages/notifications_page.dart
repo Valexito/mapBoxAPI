@@ -1,10 +1,8 @@
-// lib/features/users/pages/notifications_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
-import 'package:mapbox_api/features/users/models/notification_settings.dart';
+import 'package:mapbox_api/features/core/providers/firebase_providers.dart';
 import 'package:mapbox_api/features/users/providers/user_providers.dart';
 
 class NotificationsPage extends ConsumerStatefulWidget {
@@ -17,13 +15,21 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   static const navyTop = Color(0xFF0D1B2A);
   static const navyBottom = Color(0xFF1B3A57);
 
-  NotificationSettings? _editing;
+  Map<String, dynamic>? _editing;
   bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
     const headerHeight = 200.0;
-    final asyncSettings = ref.watch(notificationSettingsStreamProvider);
+
+    final uid = ref.watch(currentUserProvider)?.uid;
+    if (uid == null) {
+      return const Scaffold(body: Center(child: Text('No autenticado')));
+    }
+
+    final asyncSettings = ref.watch(
+      notificationSettingsStreamFamilyProvider(uid),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
@@ -32,16 +38,27 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (s) {
-            final settings = _editing ?? s;
+            final settings =
+                _editing ??
+                (s ??
+                    {
+                      'enableAll': true,
+                      'emailAlerts': false,
+                      'reservationAlerts': false,
+                      'generalAlerts': true,
+                    });
 
             void onMaster(bool v) {
               setState(() {
-                _editing = (settings).copyWith(
-                  enableAll: v,
-                  emailAlerts: v ? settings.emailAlerts : false,
-                  reservationAlerts: v ? settings.reservationAlerts : false,
-                  generalAlerts: v ? settings.generalAlerts : false,
-                );
+                _editing = {
+                  ...settings,
+                  'enableAll': v,
+                  'emailAlerts': v ? (settings['emailAlerts'] ?? false) : false,
+                  'reservationAlerts':
+                      v ? (settings['reservationAlerts'] ?? false) : false,
+                  'generalAlerts':
+                      v ? (settings['generalAlerts'] ?? false) : false,
+                };
               });
             }
 
@@ -100,7 +117,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                               _NotifyTile(
                                 title: 'Enable Notifications',
                                 subtitle: 'You will receive daily updates.',
-                                value: settings.enableAll,
+                                value: settings['enableAll'] ?? true,
                                 onChanged: onMaster,
                                 enabled: true,
                               ),
@@ -108,40 +125,46 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                               _NotifyTile(
                                 title: 'Email Alerts',
                                 subtitle: 'Expect daily updates from us.',
-                                value: settings.emailAlerts,
-                                enabled: settings.enableAll,
+                                value: settings['emailAlerts'] ?? false,
+                                enabled: settings['enableAll'] ?? true,
                                 onChanged:
-                                    (v) => setState(() {
-                                      _editing = settings.copyWith(
-                                        emailAlerts: v,
-                                      );
-                                    }),
+                                    (v) => setState(
+                                      () =>
+                                          _editing = {
+                                            ...settings,
+                                            'emailAlerts': v,
+                                          },
+                                    ),
                               ),
                               const _DividerInset(),
                               _NotifyTile(
                                 title: 'Reservation Alerts',
                                 subtitle: 'Updates about your reservations.',
-                                value: settings.reservationAlerts,
-                                enabled: settings.enableAll,
+                                value: settings['reservationAlerts'] ?? false,
+                                enabled: settings['enableAll'] ?? true,
                                 onChanged:
-                                    (v) => setState(() {
-                                      _editing = settings.copyWith(
-                                        reservationAlerts: v,
-                                      );
-                                    }),
+                                    (v) => setState(
+                                      () =>
+                                          _editing = {
+                                            ...settings,
+                                            'reservationAlerts': v,
+                                          },
+                                    ),
                               ),
                               const _DividerInset(),
                               _NotifyTile(
                                 title: 'General Alerts',
                                 subtitle: 'You will receive daily updates.',
-                                value: settings.generalAlerts,
-                                enabled: settings.enableAll,
+                                value: settings['generalAlerts'] ?? true,
+                                enabled: settings['enableAll'] ?? true,
                                 onChanged:
-                                    (v) => setState(() {
-                                      _editing = settings.copyWith(
-                                        generalAlerts: v,
-                                      );
-                                    }),
+                                    (v) => setState(
+                                      () =>
+                                          _editing = {
+                                            ...settings,
+                                            'generalAlerts': v,
+                                          },
+                                    ),
                               ),
                               const SizedBox(height: 20),
                               _saving
@@ -155,7 +178,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                                       try {
                                         await ref.read(
                                           saveNotificationSettingsProvider,
-                                        )(_editing ?? settings);
+                                        )(uid, _editing ?? settings);
                                         if (!mounted) return;
                                         ScaffoldMessenger.of(
                                           context,
@@ -227,7 +250,6 @@ class _NotifyTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(

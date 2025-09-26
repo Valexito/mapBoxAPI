@@ -10,8 +10,13 @@ import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 
 import 'package:mapbox_api/features/auth/components/square_tile.dart';
 import 'package:mapbox_api/features/auth/components/forgot_password_dialog.dart';
-import '../providers/auth_providers.dart';
+import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
+
 import 'package:mapbox_api/features/auth/providers/signin_google_provider_dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mapbox_api/features/users/pages/complete_profile_page.dart';
+import 'package:mapbox_api/features/users/providers/user_providers.dart';
+import 'package:mapbox_api/features/core/pages/home_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   final VoidCallback onShowRegister;
@@ -34,14 +39,49 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
+  void _goToCompleteProfile(
+    User user, {
+    required bool isNewUser,
+    String? password,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => CompleteProfilePage(
+              user: user,
+              isNewUser: isNewUser,
+              password: password,
+            ),
+      ),
+    );
+  }
+
+  Future<void> _routeAfterAuth(User user) async {
+    final complete = await ref.read(isProfileCompleteProvider(user.uid).future);
+    if (!mounted) return;
+
+    if (complete) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      _goToCompleteProfile(user, isNewUser: false);
+    }
+  }
+
   Future<void> _signInEmailPassword() async {
     final auth = ref.read(authActionsProvider);
     setState(() => _loading = true);
     try {
-      await auth.signInWithEmailPassword(
+      final cred = await auth.signInWithEmailPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+      final user = cred.user;
+      if (!mounted || user == null) return;
+      await _routeAfterAuth(user);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -51,7 +91,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final signInGoogle = ref.read(signInWithGoogleProvider);
     setState(() => _loading = true);
     try {
-      await signInGoogle();
+      final cred = await signInGoogle();
+      final user = (cred as UserCredential).user;
+      if (!mounted || user == null) return;
+      await _routeAfterAuth(user);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -84,8 +127,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ],
               ),
-
-              // ===== CARD =====
               Transform.translate(
                 offset: const Offset(0, -34),
                 child: Padding(
@@ -106,7 +147,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 18),
-
                           const MyText(
                             text: 'Correo electrónico',
                             variant: MyTextVariant.bodyMuted,
@@ -120,7 +160,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             textInputAction: TextInputAction.next,
                             margin: EdgeInsets.zero,
                           ),
-
                           const SizedBox(height: 14),
                           const MyText(
                             text: 'Contraseña',
@@ -133,7 +172,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             hintText: '••••••••',
                             margin: EdgeInsets.zero,
                           ),
-
                           const SizedBox(height: 8),
                           Row(
                             children: [
@@ -166,20 +204,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 8),
                           MyButton(
                             text: _loading ? "Entrando..." : "Iniciar sesión",
                             loading: _loading,
                             onTap: _loading ? null : _signInEmailPassword,
                           ),
-
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const MyText(
-                                text: "Still not connected?",
+                                text: "¿No estás registrado?",
                                 variant: MyTextVariant.bodyMuted,
                                 fontSize: 14,
                               ),
@@ -187,14 +223,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 onPressed:
                                     _loading ? null : widget.onShowRegister,
                                 child: const MyText(
-                                  text: "Sign Up",
+                                  text: "Regístrate",
                                   variant: MyTextVariant.normalBold,
                                   fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 6),
                           Row(
                             children: const [
@@ -202,7 +237,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 8),
                                 child: MyText(
-                                  text: "OR",
+                                  text: "O",
                                   variant: MyTextVariant.bodyMuted,
                                   fontSize: 14,
                                   textAlign: TextAlign.center,
@@ -212,7 +247,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ],
                           ),
                           const SizedBox(height: 14),
-
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -223,8 +257,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               const SizedBox(width: 16),
                               const SquareTile(
                                 imagePath: 'assets/images/apple.png',
-                                onTap: null, // TODO: Apple
-                              ),
+                                onTap: null,
+                              ), // TODO: Apple
                             ],
                           ),
                         ],
@@ -233,7 +267,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
             ],
           ),

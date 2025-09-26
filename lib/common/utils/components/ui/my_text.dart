@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'app_styles.dart';
 
 enum MyTextVariant { title, normal, normalBold, body, bodyBold, bodyMuted }
 
