@@ -12,7 +12,6 @@ import 'package:mapbox_api/features/auth/components/square_tile.dart';
 import 'package:mapbox_api/features/auth/components/forgot_password_dialog.dart';
 import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
 
-import 'package:mapbox_api/features/auth/providers/signin_google_provider_dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mapbox_api/features/users/pages/complete_profile_page.dart';
 import 'package:mapbox_api/features/users/providers/user_providers.dart';

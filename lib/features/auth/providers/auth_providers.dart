@@ -1,26 +1,59 @@
+// lib/features/auth/providers/auth_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-// Trae la instancia de FirebaseAuth desde core (no redefinir aquí).
+// Usa la instancia centralizada de FirebaseAuth desde core
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart'
     show firebaseAuthProvider;
 
-/// 🔄 Emite en login/logout y también cuando cambian perfil/token.
+/// ==============================
+///  USER STREAM (reactivo)
+/// ==============================
 final authUserStreamProvider = StreamProvider<User?>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
-  return auth.userChanges(); // incluye cambios de perfil e idToken
+  return auth.userChanges();
 });
 
-/// Acciones de autenticación centralizadas.
+/// ==============================
+///  GOOGLE SIGN-IN
+/// ==============================
+final googleSignInInstanceProvider = Provider<GoogleSignIn>((_) {
+  return GoogleSignIn();
+});
+
+final signInWithGoogleProvider = Provider<Future<UserCredential> Function()>((
+  ref,
+) {
+  final google = ref.watch(googleSignInInstanceProvider);
+  final auth = ref.watch(firebaseAuthProvider);
+
+  return () async {
+    final account = await google.signIn();
+    if (account == null) throw Exception('Inicio de sesión cancelado');
+
+    final tokens = await account.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: tokens.accessToken,
+      idToken: tokens.idToken,
+    );
+    return auth.signInWithCredential(credential);
+  };
+});
+
+/// ==============================
+///  ACCIONES DE AUTH
+/// ==============================
 final authActionsProvider = Provider<_AuthActions>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
-  return _AuthActions(auth);
+  return _AuthActions(auth, ref);
 });
 
 class _AuthActions {
-  _AuthActions(this._auth);
+  _AuthActions(this._auth, this._ref);
+
   final FirebaseAuth _auth;
+  final Ref _ref;
 
   Future<UserCredential> signInWithEmailPassword({
     required String email,
@@ -39,12 +72,11 @@ class _AuthActions {
     );
   }
 
-  /// Cierra sesión en Firebase y también en Google si aplica.
   Future<void> signOut() async {
     try {
-      await GoogleSignIn().signOut();
+      await _ref.read(googleSignInInstanceProvider).signOut();
     } catch (_) {
-      // Ignora si no había sesión de Google.
+      // Ignorar si no había sesión de Google
     }
     await _auth.signOut();
   }
