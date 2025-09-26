@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/navy_header.dart';
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart';
@@ -48,7 +49,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
       body: SafeArea(
         child: Column(
           children: [
-            // Header + botón volver "<"
+            // ===== Header navy + botón volver "<" =====
             Stack(
               children: [
                 const NavyHeader(
@@ -81,6 +82,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
               ],
             ),
 
+            // ===== Tabs =====
             Transform.translate(
               offset: const Offset(0, -28),
               child: Padding(
@@ -89,6 +91,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
               ),
             ),
 
+            // ===== Listas =====
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -18),
@@ -284,8 +287,8 @@ class _ReservationCard extends StatelessWidget {
                       variant: MyTextVariant.bodyBold,
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(
                           Icons.access_time,
                           size: 16,
@@ -305,8 +308,8 @@ class _ReservationCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(
                           Icons.local_parking,
                           size: 16,

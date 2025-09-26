@@ -41,7 +41,7 @@ class FavoritesPage extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ===== HEADER estilo Navy + botón volver "<" =====
+            // ===== Header navy + botón volver "<" =====
             Stack(
               children: [
                 const NavyHeader(
@@ -58,7 +58,7 @@ class FavoritesPage extends ConsumerWidget {
                 ),
                 Positioned(
                   left: 6,
-                  top: 35, // mismo offset que usaste en Reservations
+                  top: 35,
                   child: SafeArea(
                     child: IconButton(
                       icon: const Icon(
@@ -74,7 +74,7 @@ class FavoritesPage extends ConsumerWidget {
               ],
             ),
 
-            // ===== FILTROS =====
+            // ===== Filtros =====
             Transform.translate(
               offset: const Offset(0, -20),
               child: Padding(
@@ -132,7 +132,7 @@ class FavoritesPage extends ConsumerWidget {
               ),
             ),
 
-            // ===== LISTA =====
+            // ===== Lista =====
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -16),
@@ -250,7 +250,6 @@ class _FavoriteCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Corazón controlado por datos reales (stream)
                 Positioned(
                   right: 10,
                   top: 10,
@@ -261,8 +260,7 @@ class _FavoriteCard extends ConsumerWidget {
                       );
                       final isFav = favStream.maybeWhen(
                         data: (v) => v,
-                        orElse:
-                            () => true, // si está en la lista, asumimos true
+                        orElse: () => true,
                       );
                       return Material(
                         color: Colors.white,

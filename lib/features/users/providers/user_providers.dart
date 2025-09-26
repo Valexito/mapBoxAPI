@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Traemos SOLO lo necesario para evitar choques.
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart'
     show firestoreProvider, currentUserProvider;
 
-/// Ref al doc del usuario por uid
+import 'package:mapbox_api/features/users/models/user_role.dart';
+
+/// ------------------------------
+/// Doc ref /users/{uid}
+/// ------------------------------
 final userDocRefProvider =
     Provider.family<DocumentReference<Map<String, dynamic>>, String>((
       ref,
@@ -14,7 +17,9 @@ final userDocRefProvider =
       return ref.watch(firestoreProvider).collection('users').doc(uid);
     });
 
-/// ¿Perfil completo? (name/phone/role)
+/// ------------------------------
+/// Perfil completo (name/phone/role)
+/// ------------------------------
 final isProfileCompleteProvider = FutureProvider.family<bool, String>((
   ref,
   uid,
@@ -30,7 +35,9 @@ final isProfileCompleteProvider = FutureProvider.family<bool, String>((
   return hasName && hasPhone && hasRole;
 });
 
-/// Guardar/actualizar perfil del usuario autenticado
+/// ------------------------------
+/// Guardar perfil autenticado
+/// ------------------------------
 final saveProfileProvider = Provider<
   Future<void> Function({
     required String name,
@@ -44,9 +51,7 @@ final saveProfileProvider = Provider<
     required String role,
   }) async {
     final uid = ref.read(currentUserProvider)?.uid;
-    if (uid == null) {
-      throw StateError('No hay usuario autenticado.');
-    }
+    if (uid == null) throw StateError('No hay usuario autenticado.');
 
     final doc = ref.read(userDocRefProvider(uid));
     await doc.set({
@@ -58,7 +63,9 @@ final saveProfileProvider = Provider<
   };
 });
 
-/// Stream de perfil (Map simple) por uid
+/// ------------------------------
+/// Stream de perfil /users/{uid}
+/// ------------------------------
 final userProfileStreamProvider =
     StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
       return ref
@@ -67,17 +74,32 @@ final userProfileStreamProvider =
           .map((s) => s.data());
     });
 
-/// Versión de conveniencia: perfil del usuario autenticado (o null si no hay uid)
+/// Perfil del usuario autenticado
 final myProfileStreamProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   final uid = ref.watch(currentUserProvider)?.uid;
   if (uid == null) {
-    // Stream vacío si no hay sesión
     return const Stream<Map<String, dynamic>?>.empty();
   }
   return ref.watch(userDocRefProvider(uid)).snapshots().map((s) => s.data());
 });
 
-/// Notifications (stream) - subcolección 'settings/notifications' por uid
+/// ------------------------------
+/// Stream SOLO del rol actual
+/// ------------------------------
+final myRoleStreamProvider = StreamProvider<UserRole>((ref) {
+  final profileAsync = ref.watch(myProfileStreamProvider);
+  return profileAsync.when(
+    data: (data) async* {
+      yield parseRole(data?['role'] as String?);
+    },
+    loading: () => const Stream<UserRole>.empty(),
+    error: (_, __) => const Stream<UserRole>.empty(),
+  );
+});
+
+/// ------------------------------
+/// Notificaciones (subcolección)
+/// ------------------------------
 final notificationSettingsStreamFamilyProvider =
     StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
       final doc = ref
@@ -89,7 +111,6 @@ final notificationSettingsStreamFamilyProvider =
       return doc.snapshots().map((s) => s.data());
     });
 
-/// Versión de conveniencia: notificaciones del usuario autenticado
 final myNotificationSettingsStreamProvider =
     StreamProvider<Map<String, dynamic>?>((ref) {
       final uid = ref.watch(currentUserProvider)?.uid;
@@ -105,7 +126,6 @@ final myNotificationSettingsStreamProvider =
       return doc.snapshots().map((s) => s.data());
     });
 
-/// Guardar notificaciones (recibe uid + map)
 final saveNotificationSettingsProvider =
     Provider<Future<void> Function(String uid, Map<String, dynamic> settings)>((
       ref,
