@@ -1,4 +1,3 @@
-// == TU ARCHIVO, SIN NAVEGAR DESDE AQUÍ ==
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,7 +78,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         barrierDismissible: false,
         builder: (_) {
           return StatefulBuilder(
-            builder: (ctx, _) {
+            builder: (ctx, setS) {
               Future<void> _check() async {
                 await FirebaseAuth.instance.currentUser?.reload();
                 final current = FirebaseAuth.instance.currentUser;
@@ -89,18 +88,14 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
-                        'Tu correo aún no está verificado. Revisa tu bandeja o spam.',
+                        'Tu correo aún no está verificado. Revisa bandeja o spam.',
                       ),
                     ),
                   );
                   return;
                 }
-                if (mounted) {
-                  Navigator.of(
-                    context,
-                    rootNavigator: true,
-                  ).pop(); // solo cerrar el diálogo
-                }
+                // ✅ Cierra el diálogo y regresa al flujo de auth; AuthGate detectará verificación
+                if (mounted) Navigator.of(context, rootNavigator: true).pop();
               }
 
               return AlertDialog(
@@ -133,6 +128,8 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
           );
         },
       );
+      // Volver a la pantalla de login para que AuthGate recalcule estado
+      if (mounted) widget.onBackToLogin();
     } on FirebaseAuthException catch (e) {
       _showError(e.message ?? 'No se pudo crear la cuenta.');
     } catch (e) {

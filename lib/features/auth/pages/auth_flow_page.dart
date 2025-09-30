@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mapbox_api/features/auth/pages/sign_up.dart';
 import 'login_page.dart';
+import 'sign_up.dart';
 
+/// Pantalla contenedora que alterna Login/SignUp.
 class AuthFlowPage extends ConsumerStatefulWidget {
   const AuthFlowPage({super.key});
-
   @override
   ConsumerState<AuthFlowPage> createState() => _AuthFlowPageState();
 }

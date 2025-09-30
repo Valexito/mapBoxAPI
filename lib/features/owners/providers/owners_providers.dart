@@ -68,7 +68,6 @@ final createOwnerAndParkingProvider = Provider<
     required List<XFile> images,
     required int price,
   }) async {
-    // --- Validaciones básicas ---
     if (capacity <= 0) throw ArgumentError('La capacidad debe ser mayor a 0.');
     if (price < 0)
       throw ArgumentError('El precio por hora no puede ser negativo.');
@@ -76,12 +75,10 @@ final createOwnerAndParkingProvider = Provider<
 
     final current = auth.currentUser;
     if (current == null || current.uid != uid) {
-      throw StateError(
-        'Debes iniciar sesión correctamente antes de registrar el parqueo.',
-      );
+      throw StateError('Debes iniciar sesión correctamente.');
     }
 
-    // 1) Crear doc en /parkings (plural)
+    // 1) Crear parking
     final parkingRef = db.collection('parkings').doc();
     final parkingId = parkingRef.id;
     print('[create] parkingId=$parkingId uid=$uid');
@@ -93,7 +90,7 @@ final createOwnerAndParkingProvider = Provider<
       'lng': lng,
       'spaces': capacity,
       'pricePerHour': price,
-      'price': price, // compat
+      'price': price,
       'descripcion': description.isEmpty ? null : description,
       'address': address,
       'email': email,
@@ -102,7 +99,6 @@ final createOwnerAndParkingProvider = Provider<
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // 2) Espera corta + verificación (para reglas de Storage con firestore.get)
     await Future.delayed(const Duration(milliseconds: 350));
     final verify = await parkingRef.get();
     final data = verify.data() ?? {};
@@ -110,12 +106,10 @@ final createOwnerAndParkingProvider = Provider<
       '[verify] parking doc exists=${verify.exists} ownerID=${data['ownerID']}',
     );
     if (data['ownerID'] != uid) {
-      throw StateError(
-        'ownerID del parqueo no coincide con el usuario autenticado.',
-      );
+      throw StateError('ownerID no coincide.');
     }
 
-    // 3) Subir fotos a: parkings/{parkingId}/photos/{uuid}.ext
+    // 3) Subir fotos
     final List<String> photoUrls = [];
     try {
       for (final img in images) {
@@ -128,7 +122,6 @@ final createOwnerAndParkingProvider = Provider<
         final refSt = storage.ref(path);
         final metadata = SettableMetadata(contentType: _guessContentType(ext));
 
-        // 👇 AQUÍ van los print que pediste
         print(
           '[storage] uploading path=$path uid=$uid bytes=${bytes.length} ct=${metadata.contentType}',
         );
@@ -141,17 +134,13 @@ final createOwnerAndParkingProvider = Provider<
         photoUrls.add(url);
       }
     } catch (e) {
-      // Limpieza si falla la subida
-      print(
-        '[error] upload failed -> deleting parking doc id=$parkingId error=$e',
-      );
+      print('[error] upload failed -> deleting $parkingId error=$e');
       try {
         await parkingRef.delete();
       } catch (_) {}
       rethrow;
     }
 
-    // 4) Actualizar doc con portada y galería
     await parkingRef.set({
       'coverUrl': photoUrls.first,
       'photos': photoUrls,
@@ -159,7 +148,7 @@ final createOwnerAndParkingProvider = Provider<
     }, SetOptions(merge: true));
     print('[update] coverUrl set and ${photoUrls.length} photos saved');
 
-    // 5) Sembrar spaces
+    // 5) Sembrar espacios
     final spacesColl = parkingRef.collection('spaces');
     final batch = db.batch();
     for (int i = 1; i <= capacity; i++) {
@@ -169,10 +158,17 @@ final createOwnerAndParkingProvider = Provider<
       }, SetOptions(merge: true));
     }
     await batch.commit();
-    print('[seed] ${capacity} spaces created');
+    print('[seed] $capacity spaces created');
 
-    // 6) Marcar usuario como owner
+    // 6) Dejar perfil listo como owner (name/phone/role)
+    final authName = current.displayName?.trim();
+    final safeName =
+        (authName != null && authName.isNotEmpty) ? authName : companyName;
+    final safePhone = (phone.trim().isNotEmpty) ? phone.trim() : '+502 ...';
+
     await db.collection('users').doc(uid).set({
+      'name': safeName,
+      'phone': safePhone,
       'companyName': companyName,
       'role': 'owner',
       'updatedAt': FieldValue.serverTimestamp(),

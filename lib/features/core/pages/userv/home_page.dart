@@ -1,4 +1,3 @@
-// features/core/pages/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -6,11 +5,11 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:mapbox_api/common/utils/components/app_drawer.dart';
 import 'package:mapbox_api/common/utils/components/home_bottom_panel.dart';
-import 'package:mapbox_api/features/core/providers/location_provider_dart';
 import 'package:mapbox_api/features/core/components/map_widget.dart';
 
 // Providers (Riverpod)
 import 'package:mapbox_api/features/core/providers/map_providers.dart';
+import 'package:mapbox_api/features/reservations/providers/location_providers.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -47,13 +46,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: Stack(
         children: [
           // --- MAPA ---
-          // Si quieres esperar a la ubicación antes de pintar algo, usa locAsync.when.
-          // O pinta directo: MapWidget ya resuelve su ubic. interna. Dejo ambas formas:
-
-          // A) Pintar siempre (MapWidget ya obtiene ubicación internamente)
-          // MapWidget(mapController: map, onMapTap: _minimizePanel),
-
-          // B) Esperar a currentLocationProvider (suave UX al iniciar)
           locAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error:

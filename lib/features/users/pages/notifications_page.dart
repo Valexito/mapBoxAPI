@@ -18,6 +18,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   Map<String, dynamic>? _editing;
   bool _saving = false;
 
+  bool _b(dynamic v, {bool def = false}) => v is bool ? v : def;
+
   @override
   Widget build(BuildContext context) {
     const headerHeight = 200.0;
@@ -53,11 +55,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                 _editing = {
                   ...settings,
                   'enableAll': v,
-                  'emailAlerts': v ? (settings['emailAlerts'] ?? false) : false,
+                  'emailAlerts': v ? _b(settings['emailAlerts']) : false,
                   'reservationAlerts':
-                      v ? (settings['reservationAlerts'] ?? false) : false,
+                      v ? _b(settings['reservationAlerts']) : false,
                   'generalAlerts':
-                      v ? (settings['generalAlerts'] ?? false) : false,
+                      v ? _b(settings['generalAlerts'], def: true) : false,
                 };
               });
             }
@@ -117,7 +119,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                               _NotifyTile(
                                 title: 'Enable Notifications',
                                 subtitle: 'You will receive daily updates.',
-                                value: settings['enableAll'] ?? true,
+                                value: _b(settings['enableAll'], def: true),
                                 onChanged: onMaster,
                                 enabled: true,
                               ),
@@ -125,46 +127,43 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                               _NotifyTile(
                                 title: 'Email Alerts',
                                 subtitle: 'Expect daily updates from us.',
-                                value: settings['emailAlerts'] ?? false,
-                                enabled: settings['enableAll'] ?? true,
+                                value: _b(settings['emailAlerts']),
+                                enabled: _b(settings['enableAll'], def: true),
                                 onChanged:
-                                    (v) => setState(
-                                      () =>
-                                          _editing = {
-                                            ...settings,
-                                            'emailAlerts': v,
-                                          },
-                                    ),
+                                    (v) => setState(() {
+                                      _editing = {
+                                        ...settings,
+                                        'emailAlerts': v,
+                                      };
+                                    }),
                               ),
                               const _DividerInset(),
                               _NotifyTile(
                                 title: 'Reservation Alerts',
                                 subtitle: 'Updates about your reservations.',
-                                value: settings['reservationAlerts'] ?? false,
-                                enabled: settings['enableAll'] ?? true,
+                                value: _b(settings['reservationAlerts']),
+                                enabled: _b(settings['enableAll'], def: true),
                                 onChanged:
-                                    (v) => setState(
-                                      () =>
-                                          _editing = {
-                                            ...settings,
-                                            'reservationAlerts': v,
-                                          },
-                                    ),
+                                    (v) => setState(() {
+                                      _editing = {
+                                        ...settings,
+                                        'reservationAlerts': v,
+                                      };
+                                    }),
                               ),
                               const _DividerInset(),
                               _NotifyTile(
                                 title: 'General Alerts',
                                 subtitle: 'You will receive daily updates.',
-                                value: settings['generalAlerts'] ?? true,
-                                enabled: settings['enableAll'] ?? true,
+                                value: _b(settings['generalAlerts'], def: true),
+                                enabled: _b(settings['enableAll'], def: true),
                                 onChanged:
-                                    (v) => setState(
-                                      () =>
-                                          _editing = {
-                                            ...settings,
-                                            'generalAlerts': v,
-                                          },
-                                    ),
+                                    (v) => setState(() {
+                                      _editing = {
+                                        ...settings,
+                                        'generalAlerts': v,
+                                      };
+                                    }),
                               ),
                               const SizedBox(height: 20),
                               _saving
@@ -201,8 +200,9 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                                           );
                                         }
                                       } finally {
-                                        if (mounted)
+                                        if (mounted) {
                                           setState(() => _saving = false);
+                                        }
                                       }
                                     },
                                   ),

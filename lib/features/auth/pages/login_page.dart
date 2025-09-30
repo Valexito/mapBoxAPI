@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_password_field.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
@@ -15,7 +14,7 @@ import 'package:mapbox_api/features/auth/providers/auth_providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mapbox_api/features/users/pages/complete_profile_page.dart';
 import 'package:mapbox_api/features/users/providers/user_providers.dart';
-import 'package:mapbox_api/features/core/pages/home_page.dart';
+import 'package:mapbox_api/features/core/pages/home_switch.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   final VoidCallback onShowRegister;
@@ -38,37 +37,45 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
-  void _goToCompleteProfile(
-    User user, {
-    required bool isNewUser,
-    String? password,
-  }) {
-    Navigator.push(
+  void _goToCompleteProfile(User user) {
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder:
-            (_) => CompleteProfilePage(
-              user: user,
-              isNewUser: isNewUser,
-              password: password,
-            ),
+        builder: (_) => CompleteProfilePage(user: user, isNewUser: false),
       ),
+      (_) => false,
     );
   }
 
+  // ⬇⬇ AQUI VA LO QUE PEDISTE (completo) ⬇⬇
   Future<void> _routeAfterAuth(User user) async {
-    final complete = await ref.read(isProfileCompleteProvider(user.uid).future);
+    final ready = await ref.read(canEnterAppProvider(user.uid).future);
     if (!mounted) return;
 
-    if (complete) {
-      Navigator.pushReplacement(
+    if (ready) {
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => const HomeSwitch()),
+        (_) => false,
       );
     } else {
-      _goToCompleteProfile(user, isNewUser: false);
+      _goToCompleteProfile(user);
     }
   }
+
+  Future<void> _signInWithGoogle() async {
+    final signInGoogle = ref.read(signInWithGoogleProvider);
+    setState(() => _loading = true);
+    try {
+      final cred = await signInGoogle();
+      final user = (cred as UserCredential).user;
+      if (!mounted || user == null) return;
+      await _routeAfterAuth(user);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+  // ⬆⬆ FIN de lo que pediste ⬆⬆
 
   Future<void> _signInEmailPassword() async {
     final auth = ref.read(authActionsProvider);
@@ -79,19 +86,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         password: passwordController.text.trim(),
       );
       final user = cred.user;
-      if (!mounted || user == null) return;
-      await _routeAfterAuth(user);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    final signInGoogle = ref.read(signInWithGoogleProvider);
-    setState(() => _loading = true);
-    try {
-      final cred = await signInGoogle();
-      final user = (cred as UserCredential).user;
       if (!mounted || user == null) return;
       await _routeAfterAuth(user);
     } finally {
@@ -257,7 +251,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               const SquareTile(
                                 imagePath: 'assets/images/apple.png',
                                 onTap: null,
-                              ), // TODO: Apple
+                              ),
                             ],
                           ),
                         ],

@@ -6,7 +6,10 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'common/utils/components/ui/app_styles.dart';
 import 'features/auth/pages/auth_gate.dart';
-import 'features/core/pages/home_page.dart';
+import 'features/core/pages/home_switch.dart';
+
+import 'features/core/pages/userv/home_page.dart' as userv;
+import 'features/core/pages/ownerv/owner_home_page.dart';
 import 'features/owners/pages/become_owner_page.dart';
 import 'features/reservations/components/route_view_page_wrapper.dart';
 import 'features/reservations/pages/reservations_page.dart';
@@ -42,7 +45,11 @@ class MyApp extends StatelessWidget {
       home: const AuthGate(),
       routes: {
         '/auth': (_) => const AuthGate(),
-        '/homePage': (_) => const HomePage(),
+        '/home': (_) => const HomeSwitch(), // <- NUEVA ruta
+        '/homePage':
+            (_) =>
+                const userv.HomePage(), // opcional, si la usas en otros flujos
+        '/owner': (_) => const OwnerHomePage(),
         '/becomeProvider': (_) => const BecomeOwnerPage(),
         '/mapPicker': (_) => const MapPickerPage(),
         '/routeView': (_) => const RouteViewPageWrapper(),

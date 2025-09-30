@@ -8,10 +8,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
-import 'package:mapbox_api/features/core/pages/map_pick_page.dart';
+import 'package:mapbox_api/features/core/pages/userv/map_pick_page.dart';
 
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart';
 import 'package:mapbox_api/features/owners/providers/owners_providers.dart';
+
+// 👇 NUEVO: para cerrar sesión al terminar
+import 'package:mapbox_api/features/auth/providers/auth_providers.dart'
+    show authActionsProvider;
 
 class BecomeOwnerPage extends ConsumerStatefulWidget {
   const BecomeOwnerPage({super.key});
@@ -160,9 +164,21 @@ class _BecomeOwnerPageState extends ConsumerState<BecomeOwnerPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    // cierra diálogo y página
                     Navigator.pop(context);
                     Navigator.pop(context);
+                    // 🔐 cerrar sesión y volver al gate
+                    try {
+                      await ref.read(authActionsProvider).signOut();
+                    } catch (_) {}
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/auth',
+                        (_) => false,
+                      );
+                    }
                   },
                   child: const Text('Aceptar'),
                 ),

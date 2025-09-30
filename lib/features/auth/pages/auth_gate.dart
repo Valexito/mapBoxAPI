@@ -1,10 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/pages/home_page.dart';
-import '../../users/pages/complete_profile_page.dart';
-import '../providers/auth_providers.dart';
 import '../../users/providers/user_providers.dart';
+import '../../users/pages/complete_profile_page.dart';
+import '../../core/pages/home_switch.dart';
 import 'auth_flow_page.dart';
 
 class AuthGate extends ConsumerWidget {
@@ -12,40 +12,49 @@ class AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(authUserStreamProvider);
+    final authStream = FirebaseAuth.instance.authStateChanges();
 
-    return userAsync.when(
-      loading:
-          () =>
-              const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text('Auth error: $e'))),
-      data: (user) {
-        // 1) Sin sesión → login/registro
-        if (user == null) return const AuthFlowPage();
-
-        // 2) Si quieres requerir verificación de email para email/password:
-        //    deja esto activo; para Google normalmente ya viene verificado.
-        if (!(user.emailVerified) &&
-            user.providerData.any((p) => p.providerId == 'password')) {
-          return const AuthFlowPage();
+    return StreamBuilder<User?>(
+      stream: authStream,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const _CenterWait('Inicializando...');
         }
 
-        // 3) Con sesión → ¿perfil completo?
-        final profileAsync = ref.watch(isProfileCompleteProvider(user.uid));
-        return profileAsync.when(
-          loading:
-              () => const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              ),
-          // Si Firestore falla, muestra CompleteProfile para no bloquear
-          error: (e, _) => CompleteProfilePage(user: user, isNewUser: true),
-          data:
-              (complete) =>
-                  complete
-                      ? const HomePage()
-                      : CompleteProfilePage(user: user, isNewUser: true),
+        final user = snap.data;
+
+        if (user == null) {
+          return const AuthFlowPage(); // Login / SignUp
+        }
+
+        return FutureBuilder<bool>(
+          future: ref.read(canEnterAppProvider(user.uid).future),
+          builder: (context, canSnap) {
+            if (canSnap.connectionState == ConnectionState.waiting) {
+              return const _CenterWait('Verificando perfil...');
+            }
+
+            final canEnter = canSnap.data ?? false;
+            if (canEnter) {
+              return const HomeSwitch();
+            }
+
+            return CompleteProfilePage(
+              user: FirebaseAuth.instance.currentUser!,
+              isNewUser: false,
+            );
+          },
         );
       },
     );
   }
+}
+
+class _CenterWait extends StatelessWidget {
+  final String msg;
+  const _CenterWait(this.msg);
+
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: CircularProgressIndicator()));
 }

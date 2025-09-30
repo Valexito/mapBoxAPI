@@ -6,12 +6,12 @@ import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 
 // Páginas
-import 'package:mapbox_api/features/core/pages/configurations_page.dart';
-import 'package:mapbox_api/features/core/pages/frequent_questions_page.dart';
-import 'package:mapbox_api/features/core/pages/legal_information_page.dart';
-import 'package:mapbox_api/features/core/pages/report_problem_page.dart';
+import 'package:mapbox_api/features/core/pages/userv/configurations_page.dart';
+import 'package:mapbox_api/features/core/pages/userv/frequent_questions_page.dart';
+import 'package:mapbox_api/features/core/pages/userv/legal_information_page.dart';
+import 'package:mapbox_api/features/core/pages/userv/report_problem_page.dart';
 import 'package:mapbox_api/features/reservations/pages/reservations_page.dart';
-import 'package:mapbox_api/features/core/pages/favorites_page.dart';
+import 'package:mapbox_api/features/core/pages/userv/favorites_page.dart';
 import 'package:mapbox_api/features/users/pages/profile_page.dart';
 
 // Auth
