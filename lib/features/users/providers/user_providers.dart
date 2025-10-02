@@ -1,4 +1,3 @@
-// lib/features/users/providers/user_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,10 +25,11 @@ final isProfileCompleteProvider = FutureProvider.family<bool, String>((
   if (!snap.exists) return false;
   final d = snap.data() ?? <String, dynamic>{};
   String s(dynamic v) => (v as String? ?? '').trim();
-  final hasName = s(d['name']).isNotEmpty;
+  final hasName = s(d['name']).isNotEmpty || s(d['displayName']).isNotEmpty;
   final hasPhone = s(d['phone']).isNotEmpty;
   final hasRole = s(d['role']).isNotEmpty;
-  return hasName && hasPhone && hasRole;
+  final completed = d['profileCompleted'] == true;
+  return (hasName && hasPhone && hasRole) || completed;
 });
 
 // ---------- Guardado de perfil ----------
@@ -52,8 +52,10 @@ final saveProfileProvider = Provider<
       'uid': u.uid,
       'email': u.email,
       'name': name.trim(),
+      'displayName': name.trim(),
       'phone': phone.trim(),
       'role': role.trim(),
+      'profileCompleted': true,
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -64,11 +66,7 @@ final saveProfileProvider = Provider<
 final myProfileStreamProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   final uid = ref.watch(currentUserProvider)?.uid;
   if (uid == null) return const Stream.empty();
-  return ref
-      .watch(userDocRefProvider(uid))
-      .snapshots()
-      .map((s) => s.data())
-      .handleError((_) {});
+  return ref.watch(userDocRefProvider(uid)).snapshots().map((s) => s.data());
 });
 
 // ---------- ¿tengo al menos un parking? ----------
@@ -126,10 +124,13 @@ final canEnterAppProvider = FutureProvider.family<bool, String>((
     if (role == UserRole.provider || role == UserRole.admin) return true;
 
     String s(dynamic v) => (v as String? ?? '').trim();
-    final hasName = s(data['name']).isNotEmpty;
+    final hasName =
+        s(data['name']).isNotEmpty || s(data['displayName']).isNotEmpty;
     final hasPhone = s(data['phone']).isNotEmpty;
     final hasRole = roleStr.isNotEmpty;
-    if (hasName && hasPhone && hasRole) return true;
+    if ((hasName && hasPhone && hasRole) || data['profileCompleted'] == true) {
+      return true;
+    }
 
     final owns =
         await db
@@ -144,7 +145,6 @@ final canEnterAppProvider = FutureProvider.family<bool, String>((
 });
 
 // ---------- Notification Settings ----------
-// Doc: /users/{uid}/settings/notifications
 final notificationSettingsDocProvider =
     Provider.family<DocumentReference<Map<String, dynamic>>, String>(
       (ref, uid) => ref
@@ -155,7 +155,6 @@ final notificationSettingsDocProvider =
           .doc('notifications'),
     );
 
-// 1) stream (family por uid, útil cuando tú ya tienes el uid)
 final notificationSettingsStreamFamilyProvider =
     StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
       return ref
@@ -164,7 +163,6 @@ final notificationSettingsStreamFamilyProvider =
           .map((s) => s.data());
     });
 
-// 2) stream sin family (usa currentUserProvider) — lo usa tu ConfigurationsPage
 final myNotificationSettingsStreamProvider =
     StreamProvider<Map<String, dynamic>?>((ref) {
       final uid = ref.watch(currentUserProvider)?.uid;
@@ -175,7 +173,6 @@ final myNotificationSettingsStreamProvider =
           .map((s) => s.data());
     });
 
-// 3) saver
 final saveNotificationSettingsProvider =
     Provider<Future<void> Function(String uid, Map<String, dynamic> settings)>((
       ref,

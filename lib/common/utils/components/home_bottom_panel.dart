@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/services/recent_searches.dart';
+import 'package:mapbox_api/common/env/env.dart';
 
 class HomeBottomPanel extends StatefulWidget {
   const HomeBottomPanel({
@@ -72,34 +74,41 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
   }
 
   Future<void> _fetchSuggestions(String value) async {
-    if (value.trim().length < 3) {
+    final q = value.trim();
+    if (q.length < 3) {
       setState(() => _suggestions = []);
       return;
     }
 
-    const String accessToken =
-        'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
-    final url =
-        'https://api.mapbox.com/geocoding/v5/mapbox.places/$value.json?access_token=$accessToken&autocomplete=true&country=GT&limit=5';
+    final token = Env.mapboxToken;
+    if (token.isEmpty) {
+      setState(() => _suggestions = []);
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://api.mapbox.com/geocoding/v5/mapbox.places/${Uri.encodeComponent(q)}.json'
+      '?access_token=$token&autocomplete=true&country=GT&limit=5',
+    );
 
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(uri).timeout(const Duration(seconds: 6));
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
         final features = (data['features'] as List?) ?? [];
         setState(() {
-          _suggestions =
-              features
-                  .map(
-                    (f) => {
-                      'name': f['text'] ?? '',
-                      'address': f['place_name'] ?? '',
-                      'coordinates': f['center'] ?? [], // [lng, lat]
-                    },
-                  )
-                  .toList();
+          _suggestions = features
+              .map<Map<String, dynamic>>(
+                (f) => {
+                  'name': f['text'] ?? '',
+                  'address': f['place_name'] ?? '',
+                  'coordinates':
+                      (f['center'] ?? const []) as List, // [lng, lat]
+                },
+              )
+              .toList(growable: false);
         });
       } else {
         setState(() => _suggestions = []);
@@ -138,7 +147,6 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
       minChildSize: _minSize,
       maxChildSize: _maxSize,
       builder: (context, scrollController) {
-        // 👇 GestureDetector SOLO sobre el panel (no toda la pantalla)
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => _animateTo(_maxSize),
@@ -160,7 +168,6 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // handle
                   Center(
                     child: Container(
                       height: 6,
@@ -172,8 +179,6 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
                       ),
                     ),
                   ),
-
-                  // search
                   MyTextField(
                     controller: _searchController,
                     hintText: '¿A dónde quieres ir?',
@@ -184,7 +189,6 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
                     margin: EdgeInsets.zero,
                     focusNode: _focus,
                   ),
-
                   const SizedBox(height: 16),
 
                   if (_suggestions.isNotEmpty) ...[

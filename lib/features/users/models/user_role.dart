@@ -14,3 +14,6 @@ UserRole parseRole(String? raw) {
       return UserRole.unknown;
   }
 }
+
+// alias backward-compat
+UserRole roleFromString(String? v) => parseRole(v);

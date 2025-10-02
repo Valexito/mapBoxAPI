@@ -32,6 +32,9 @@ final signInWithGoogleProvider = Provider<Future<UserCredential> Function()>((
   };
 });
 
+// ✅ alias for compatibility with LoginPage
+final signInWithGoogleFnProvider = signInWithGoogleProvider;
+
 final authActionsProvider = Provider<_AuthActions>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
   return _AuthActions(auth, ref);
