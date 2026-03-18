@@ -21,14 +21,19 @@ final isProfileCompleteProvider = FutureProvider.family<bool, String>((
   try {
     await FirebaseAuth.instance.currentUser?.reload();
   } catch (_) {}
+
   final snap = await ref.read(userDocRefProvider(uid)).get();
   if (!snap.exists) return false;
+
   final d = snap.data() ?? <String, dynamic>{};
+
   String s(dynamic v) => (v as String? ?? '').trim();
+
   final hasName = s(d['name']).isNotEmpty || s(d['displayName']).isNotEmpty;
   final hasPhone = s(d['phone']).isNotEmpty;
   final hasRole = s(d['role']).isNotEmpty;
   final completed = d['profileCompleted'] == true;
+
   return (hasName && hasPhone && hasRole) || completed;
 });
 
@@ -46,8 +51,10 @@ final saveProfileProvider = Provider<
     required String role,
   }) async {
     final u = FirebaseAuth.instance.currentUser;
-    if (u == null) throw StateError('No hay usuario autenticado.');
+    if (u == null) throw StateError('No authenticated user.');
+
     final doc = ref.read(userDocRefProvider(u.uid));
+
     await doc.set({
       'uid': u.uid,
       'email': u.email,
@@ -59,6 +66,11 @@ final saveProfileProvider = Provider<
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
+    ref.invalidate(isProfileCompleteProvider(u.uid));
+    ref.invalidate(canEnterAppProvider(u.uid));
+    ref.invalidate(myProfileStreamProvider);
+    ref.invalidate(myRoleStreamProvider);
   };
 });
 
@@ -66,6 +78,7 @@ final saveProfileProvider = Provider<
 final myProfileStreamProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   final uid = ref.watch(currentUserProvider)?.uid;
   if (uid == null) return const Stream.empty();
+
   return ref.watch(userDocRefProvider(uid)).snapshots().map((s) => s.data());
 });
 
@@ -73,7 +86,9 @@ final myProfileStreamProvider = StreamProvider<Map<String, dynamic>?>((ref) {
 final iOwnAtLeastOneParkingProvider = FutureProvider<bool>((ref) async {
   final uid = ref.watch(currentUserProvider)?.uid;
   if (uid == null) return false;
+
   final db = ref.watch(firestoreProvider);
+
   try {
     final q =
         await db
@@ -81,6 +96,7 @@ final iOwnAtLeastOneParkingProvider = FutureProvider<bool>((ref) async {
             .where('ownerID', isEqualTo: uid)
             .limit(1)
             .get();
+
     return q.docs.isNotEmpty;
   } catch (_) {
     return false;
@@ -90,6 +106,7 @@ final iOwnAtLeastOneParkingProvider = FutureProvider<bool>((ref) async {
 // ---------- Rol efectivo ----------
 final myRoleStreamProvider = StreamProvider<UserRole>((ref) {
   final profileAsync = ref.watch(myProfileStreamProvider);
+
   return profileAsync.when(
     data: (data) async* {
       final r = parseRole(data?['role'] as String?);
@@ -97,6 +114,7 @@ final myRoleStreamProvider = StreamProvider<UserRole>((ref) {
         yield r;
         return;
       }
+
       final owns = await ref.read(iOwnAtLeastOneParkingProvider.future);
       yield owns ? UserRole.provider : UserRole.user;
     },
@@ -109,38 +127,52 @@ final myRoleStreamProvider = StreamProvider<UserRole>((ref) {
 });
 
 // ---------- ¿puede entrar a la app? ----------
-final canEnterAppProvider = FutureProvider.family<bool, String>((
+final canEnterAppProvider = FutureProvider.autoDispose.family<bool, String>((
   ref,
   uid,
 ) async {
   final db = ref.watch(firestoreProvider);
+
   try {
-    final doc = await db.collection('users').doc(uid).get();
+    final doc = await db
+        .collection('users')
+        .doc(uid)
+        .get()
+        .timeout(const Duration(seconds: 8));
+
     if (!doc.exists) return false;
 
     final data = doc.data() ?? <String, dynamic>{};
+
     final roleStr = ((data['role'] as String?) ?? '').trim();
     final role = parseRole(roleStr);
-    if (role == UserRole.provider || role == UserRole.admin) return true;
+
+    if (role == UserRole.provider || role == UserRole.admin) {
+      return true;
+    }
 
     String s(dynamic v) => (v as String? ?? '').trim();
+
     final hasName =
         s(data['name']).isNotEmpty || s(data['displayName']).isNotEmpty;
     final hasPhone = s(data['phone']).isNotEmpty;
     final hasRole = roleStr.isNotEmpty;
-    if ((hasName && hasPhone && hasRole) || data['profileCompleted'] == true) {
+    final completed = data['profileCompleted'] == true;
+
+    if ((hasName && hasPhone && hasRole) || completed) {
       return true;
     }
 
-    final owns =
-        await db
-            .collection('parkings')
-            .where('ownerID', isEqualTo: uid)
-            .limit(1)
-            .get();
+    final owns = await db
+        .collection('parkings')
+        .where('ownerID', isEqualTo: uid)
+        .limit(1)
+        .get()
+        .timeout(const Duration(seconds: 8));
+
     return owns.docs.isNotEmpty;
   } catch (_) {
-    return true; // no bloquear por errores transitorios
+    return false;
   }
 });
 
@@ -167,6 +199,7 @@ final myNotificationSettingsStreamProvider =
     StreamProvider<Map<String, dynamic>?>((ref) {
       final uid = ref.watch(currentUserProvider)?.uid;
       if (uid == null) return const Stream.empty();
+
       return ref
           .watch(notificationSettingsDocProvider(uid))
           .snapshots()

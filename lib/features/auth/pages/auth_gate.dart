@@ -1,9 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../users/providers/user_providers.dart';
+import '../../core/providers/firebase_providers.dart';
 import '../../users/pages/complete_profile_page.dart';
+import '../../users/providers/user_providers.dart';
 import '../../core/pages/home_switch.dart';
 import 'auth_flow_page.dart';
 
@@ -12,37 +11,27 @@ class AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authStream = FirebaseAuth.instance.authStateChanges();
+    final authAsync = ref.watch(authStateChangesProvider);
 
-    return StreamBuilder<User?>(
-      stream: authStream,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const _CenterWait('Inicializando...');
-        }
-
-        final user = snap.data;
-
+    return authAsync.when(
+      loading: () => const _CenterWait(),
+      error: (_, __) => const AuthFlowPage(),
+      data: (user) {
         if (user == null) {
-          return const AuthFlowPage(); // Login / SignUp
+          return const AuthFlowPage();
         }
 
-        return FutureBuilder<bool>(
-          future: ref.read(canEnterAppProvider(user.uid).future),
-          builder: (context, canSnap) {
-            if (canSnap.connectionState == ConnectionState.waiting) {
-              return const _CenterWait('Verificando perfil...');
-            }
+        final canEnterAsync = ref.watch(canEnterAppProvider(user.uid));
 
-            final canEnter = canSnap.data ?? false;
+        return canEnterAsync.when(
+          loading: () => const _CenterWait(),
+          error: (_, __) => CompleteProfilePage(user: user, isNewUser: false),
+          data: (canEnter) {
             if (canEnter) {
               return const HomeSwitch();
             }
 
-            return CompleteProfilePage(
-              user: FirebaseAuth.instance.currentUser!,
-              isNewUser: false,
-            );
+            return CompleteProfilePage(user: user, isNewUser: false);
           },
         );
       },
@@ -51,10 +40,10 @@ class AuthGate extends ConsumerWidget {
 }
 
 class _CenterWait extends StatelessWidget {
-  final String msg;
-  const _CenterWait(this.msg);
+  const _CenterWait();
 
   @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
 }

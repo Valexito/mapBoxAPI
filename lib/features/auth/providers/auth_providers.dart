@@ -5,6 +5,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mapbox_api/features/core/providers/firebase_providers.dart'
     show firebaseAuthProvider;
 
+import 'package:mapbox_api/features/users/providers/user_providers.dart';
+
 final authUserStreamProvider = StreamProvider<User?>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
   return auth.userChanges();
@@ -22,17 +24,18 @@ final signInWithGoogleProvider = Provider<Future<UserCredential> Function()>((
 
   return () async {
     final account = await google.signIn();
-    if (account == null) throw Exception('Inicio de sesión cancelado');
+    if (account == null) throw Exception('Google sign-in cancelled');
+
     final tokens = await account.authentication;
     final credential = GoogleAuthProvider.credential(
       accessToken: tokens.accessToken,
       idToken: tokens.idToken,
     );
+
     return auth.signInWithCredential(credential);
   };
 });
 
-// ✅ alias for compatibility with LoginPage
 final signInWithGoogleFnProvider = signInWithGoogleProvider;
 
 final authActionsProvider = Provider<_AuthActions>((ref) {
@@ -42,23 +45,43 @@ final authActionsProvider = Provider<_AuthActions>((ref) {
 
 class _AuthActions {
   _AuthActions(this._auth, this._ref);
+
   final FirebaseAuth _auth;
   final Ref _ref;
 
   Future<UserCredential> signInWithEmailPassword({
     required String email,
     required String password,
-  }) => _auth.signInWithEmailAndPassword(email: email, password: password);
+  }) {
+    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
 
   Future<UserCredential> signUpWithEmailPassword({
     required String email,
     required String password,
-  }) => _auth.createUserWithEmailAndPassword(email: email, password: password);
+  }) {
+    return _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
 
   Future<void> signOut() async {
+    final uid = _auth.currentUser?.uid;
+
     try {
       await _ref.read(googleSignInInstanceProvider).signOut();
     } catch (_) {}
+
     await _auth.signOut();
+
+    if (uid != null) {
+      _ref.invalidate(isProfileCompleteProvider(uid));
+      _ref.invalidate(canEnterAppProvider(uid));
+    }
+
+    _ref.invalidate(myProfileStreamProvider);
+    _ref.invalidate(myRoleStreamProvider);
+    _ref.invalidate(iOwnAtLeastOneParkingProvider);
   }
 }

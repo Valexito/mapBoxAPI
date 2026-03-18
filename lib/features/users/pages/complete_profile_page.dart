@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
-import 'package:mapbox_api/features/core/pages/userv/home_page.dart';
 import 'package:mapbox_api/features/users/providers/user_providers.dart';
 
 class CompleteProfilePage extends ConsumerStatefulWidget {
   final User user;
   final bool isNewUser;
   final String? password;
+
   const CompleteProfilePage({
     super.key,
     required this.user,
@@ -27,17 +27,23 @@ class CompleteProfilePage extends ConsumerStatefulWidget {
 class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
+
   bool isSaving = false;
 
   @override
   void initState() {
     super.initState();
+
     final u = widget.user;
-    if (u.displayName?.isNotEmpty == true) {
-      nameController.text = u.displayName!;
+
+    if ((u.displayName ?? '').trim().isNotEmpty) {
+      nameController.text = u.displayName!.trim();
     }
+
     phoneController.text =
-        u.phoneNumber?.isNotEmpty == true ? u.phoneNumber! : '+502 ';
+        (u.phoneNumber ?? '').trim().isNotEmpty
+            ? u.phoneNumber!.trim()
+            : '+502 ';
   }
 
   @override
@@ -48,58 +54,66 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
   }
 
   Future<void> _save() async {
-    // ✅ Pre-check de verificación de correo (Opción A)
     final u = FirebaseAuth.instance.currentUser;
     await u?.reload();
-    if (u?.emailVerified != true) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes verificar tu correo antes de continuar.'),
-        ),
-      );
-      return;
+
+    if (!mounted) return;
+
+    final providerIds = u?.providerData.map((e) => e.providerId).toSet() ?? {};
+    final isPasswordUser = providerIds.contains('password');
+    final isGoogleUser = providerIds.contains('google.com');
+    final isAppleUser = providerIds.contains('apple.com');
+
+    if (isPasswordUser && !isGoogleUser && !isAppleUser) {
+      if (u?.emailVerified != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must verify your email before continuing.'),
+          ),
+        );
+        return;
+      }
     }
 
-    // Validaciones rápidas
     final name = nameController.text.trim();
     final phone = phoneController.text.trim();
+
     if (name.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Escribe tu nombre')));
+      ).showSnackBar(const SnackBar(content: Text('Enter your name')));
       return;
     }
+
     if (phone.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Escribe tu teléfono')));
+      ).showSnackBar(const SnackBar(content: Text('Enter your phone number')));
       return;
     }
 
     setState(() => isSaving = true);
+
     try {
       await ref.read(saveProfileProvider)(
         name: name,
         phone: phone,
-        // 🔒 Rol fijo para el alta de perfil: 'user'
         role: 'user',
       );
 
       if (!mounted) return;
-      // Si prefieres que pase por el AuthGate/HomeSwitch, usa:
-      // Navigator.pushReplacementNamed(context, '/');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      if (mounted) setState(() => isSaving = false);
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
     }
   }
 
@@ -113,6 +127,7 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
           Navigator.of(context).pop();
           return false;
         }
+
         Navigator.of(context).pushReplacementNamed('/auth');
         return false;
       },
@@ -141,7 +156,6 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                       fontSize: 13,
                     ),
                     const SizedBox(height: 24),
-
                     const MyText(
                       text: 'Nombre completo',
                       variant: MyTextVariant.normal,
@@ -155,7 +169,6 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
-
                     const SizedBox(height: 14),
                     const MyText(
                       text: 'Teléfono',
@@ -171,7 +184,6 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                       obscureText: false,
                       margin: EdgeInsets.zero,
                     ),
-
                     const SizedBox(height: 26),
                     isSaving
                         ? const Center(child: CircularProgressIndicator())
@@ -179,7 +191,6 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                   ],
                 ),
               ),
-
               Positioned(
                 top: 10,
                 right: 10,
