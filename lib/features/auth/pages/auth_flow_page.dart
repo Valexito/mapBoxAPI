@@ -1,11 +1,12 @@
+// lib/features/auth/pages/auth_flow_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'login_page.dart';
 import 'sign_up.dart';
 
-/// Pantalla contenedora que alterna Login/SignUp.
 class AuthFlowPage extends ConsumerStatefulWidget {
   const AuthFlowPage({super.key});
+
   @override
   ConsumerState<AuthFlowPage> createState() => _AuthFlowPageState();
 }

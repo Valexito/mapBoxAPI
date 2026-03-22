@@ -1,3 +1,4 @@
+// lib/common/utils/components/ui/my_textfield.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_styles.dart';
@@ -6,7 +7,6 @@ class MyTextField extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
 
-  // Comportamiento
   final bool obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -17,8 +17,7 @@ class MyTextField extends StatefulWidget {
   final int? maxLength;
   final List<TextInputFormatter>? inputFormatters;
 
-  // Decoración
-  final IconData? prefixIcon; // opcional (omítelo en Login/SignUp)
+  final IconData? prefixIcon;
   final bool circularPrefix;
   final Widget? suffix;
   final EdgeInsetsGeometry? margin;
@@ -26,10 +25,8 @@ class MyTextField extends StatefulWidget {
   final String? helperText;
   final String? errorText;
 
-  // Form
   final String? Function(String?)? validator;
 
-  // Focus externo
   final FocusNode? focusNode;
   final ValueChanged<bool>? onFocusChange;
 
@@ -92,16 +89,18 @@ class _MyTextFieldState extends State<MyTextField> {
 
   Widget? _buildPrefix() {
     if (widget.prefixIcon == null) return null;
-    final Color color = _active ? AppColors.navyBottom : AppColors.primary;
+
+    final color = _active ? AppColors.headerBottom : AppColors.primary;
 
     if (!widget.circularPrefix) {
       return Padding(
-        padding: const EdgeInsetsDirectional.only(start: 8.0, end: 4.0),
+        padding: const EdgeInsetsDirectional.only(start: 8, end: 4),
         child: Icon(widget.prefixIcon, color: color),
       );
     }
+
     return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 8.0, end: 6.0),
+      padding: const EdgeInsetsDirectional.only(start: 8, end: 6),
       child: Container(
         width: 28,
         height: 28,
@@ -116,33 +115,50 @@ class _MyTextFieldState extends State<MyTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).inputDecorationTheme;
+    final radius = BorderRadius.circular(AppDims.radiusLg);
 
-    // Texto como Drawer: fuerte al enfocar, más suave al salir
     final textStyle = TextStyle(
       color: _active ? AppColors.textPrimary : AppColors.textSecondary,
       fontWeight: FontWeight.w600,
       fontSize: 15,
     );
 
-    // Usamos InputBorder.none para asegurarnos de que NO salga la línea negra
-    final decoration = const InputDecoration(border: InputBorder.none)
-        .applyDefaults(theme)
-        .copyWith(
-          labelText: widget.labelText,
-          helperText: widget.helperText,
-          errorText: widget.errorText,
-          hintText: widget.hintText,
-          filled: true,
-          fillColor: _active ? Colors.white : AppColors.formFieldBg,
-          prefixIcon: _buildPrefix(),
-          suffixIcon: widget.suffix,
-          // padding un poco mayor para que se vean más "anchos/altos"
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 16, // ↑
-            horizontal: 18, // ↑
-          ),
-        );
+    final baseBorder = OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide.none,
+    );
+
+    final focusedBorder = OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(
+        color: AppColors.headerBottom.withOpacity(0.45),
+        width: 1,
+      ),
+    );
+
+    final decoration = InputDecoration(
+      labelText: widget.labelText,
+      helperText: widget.helperText,
+      errorText: widget.errorText,
+      hintText: widget.hintText,
+      filled: true,
+      fillColor: _active ? Colors.white : AppColors.formFieldBg,
+      prefixIcon: _buildPrefix(),
+      suffixIcon: widget.suffix,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+      border: baseBorder,
+      enabledBorder: baseBorder,
+      disabledBorder: baseBorder,
+      focusedBorder: focusedBorder,
+      errorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.danger, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.danger, width: 1.2),
+      ),
+    );
 
     final field =
         (widget.validator == null)
@@ -159,7 +175,7 @@ class _MyTextFieldState extends State<MyTextField> {
               maxLength: widget.maxLength,
               inputFormatters: widget.inputFormatters,
               style: textStyle,
-              cursorColor: AppColors.navyBottom,
+              cursorColor: AppColors.headerBottom,
               decoration: decoration,
             )
             : TextFormField(
@@ -176,40 +192,30 @@ class _MyTextFieldState extends State<MyTextField> {
               inputFormatters: widget.inputFormatters,
               validator: widget.validator,
               style: textStyle,
-              cursorColor: AppColors.navyBottom,
+              cursorColor: AppColors.headerBottom,
               decoration: decoration,
             );
 
-    // Contenedor que da el "borde-sombra" azul al enfocar (glow)
     return Padding(
       padding: widget.margin ?? const EdgeInsets.symmetric(horizontal: 25),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-          // “glow” + fino borde en navy al enfocar
-          border:
-              _active
-                  ? Border.all(
-                    color: AppColors.navyBottom.withOpacity(0.45),
-                    width: 1,
-                  )
-                  : null,
+          borderRadius: radius,
           boxShadow:
               _active
                   ? [
                     BoxShadow(
-                      color: AppColors.navyBottom.withOpacity(0.28),
-                      blurRadius: 20,
+                      color: AppColors.headerBottom.withOpacity(0.18),
+                      blurRadius: 18,
                       spreadRadius: 0.5,
                       offset: const Offset(0, 6),
                     ),
                   ]
                   : [],
         ),
-        child: field,
+        child: ClipRRect(borderRadius: radius, child: field),
       ),
     );
   }

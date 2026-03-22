@@ -88,7 +88,7 @@ class _HomeParkingDetailBottomSheetState
     );
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
       child: Material(
         color: Colors.white,
         child: Column(

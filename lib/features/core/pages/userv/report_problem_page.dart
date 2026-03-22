@@ -61,7 +61,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
     return Scaffold(
       backgroundColor: AppColors.pageBg,
       appBar: AppBar(
-        backgroundColor: AppColors.navyBottom,
+        backgroundColor: AppColors.headerBottom,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
@@ -152,7 +152,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
 
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.navyBottom,
+                      backgroundColor: AppColors.headerBottom,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

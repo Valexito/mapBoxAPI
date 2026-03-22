@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 
@@ -15,9 +17,6 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   String? _message;
   bool _sending = false;
 
-  static const _navyDark = Color(0xFF0D1B2A);
-  static const _navyLight = Color(0xFF1B3A57);
-
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -29,6 +28,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
     final isEmail = RegExp(
       r'^[\w\.\-]+@([\w\-]+\.)+[a-zA-Z]{2,}$',
     ).hasMatch(email);
+
     if (!isEmail) {
       setState(() => _message = 'Escribe un correo válido.');
       return;
@@ -41,15 +41,15 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      setState(
-        () =>
-            _message = 'Te enviamos un correo para restablecer tu contraseña.',
-      );
+      setState(() {
+        _message = 'Te enviamos un correo para restablecer tu contraseña.';
+      });
     } on FirebaseAuthException catch (e) {
       var msg = 'Ocurrió un error. Intenta de nuevo.';
       if (e.code == 'invalid-email') msg = 'El correo no es válido.';
-      if (e.code == 'user-not-found')
+      if (e.code == 'user-not-found') {
         msg = 'No existe una cuenta con ese correo.';
+      }
       setState(() => _message = msg);
     } catch (_) {
       setState(() => _message = 'Ocurrió un error inesperado.');
@@ -61,111 +61,140 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const MyText(
-              text: '¿OLVIDASTE TU CONTRASEÑA?',
-              variant: MyTextVariant.title,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            const MyText(
-              text: 'Ingresa tu correo electrónico para recibir el enlace.',
-              variant: MyTextVariant.bodyMuted,
-              textAlign: TextAlign.center,
-              fontSize: 13,
-            ),
-            const SizedBox(height: 16),
-
-            // ÍCONO DENTRO DEL TEXTFIELD (igual al login)
-            MyTextField(
-              controller: _emailCtrl,
-              hintText: 'Ingresa tu correo electrónico',
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.done,
-              obscureText: false,
-              prefixIcon: Icons.mail_outline, // ← aquí el ícono interno
-              margin: EdgeInsets.zero,
-            ),
-
-            if (_message != null) ...[
-              const SizedBox(height: 12),
-              MyText(
-                text: _message!,
-                variant: MyTextVariant.body,
-                textAlign: TextAlign.center,
-                fontSize: 12,
-              ),
-            ],
-            const SizedBox(height: 18),
-
-            // BOTONES CENTRADOS, BAJITOS, SIMÉTRICOS
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 40,
-                  width: 120,
-                  child: OutlinedButton(
-                    onPressed: _sending ? null : () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _navyLight, width: 1.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const MyText(
-                      text: 'Cancelar',
-                      variant: MyTextVariant.normalBold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  height: 40,
-                  width: 120,
-                  child: InkWell(
-                    onTap: _sending ? null : _sendResetEmail,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_navyDark, _navyLight],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 6,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _sending ? 'Enviando...' : 'Enviar',
-                          style: const TextStyle(
-                            color: Colors.white, // ← Texto blanco
-                            fontWeight: FontWeight.bold, // igual que normalBold
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBg,
+          borderRadius: BorderRadius.circular(AppDims.radiusXl),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryDark.withOpacity(0.10),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.headerTop, AppColors.headerBottom],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.headerBottom.withOpacity(0.22),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.lock_reset_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const MyText(
+                  text: 'Recuperar contraseña',
+                  variant: MyTextVariant.normalBold,
+                  customColor: AppColors.headerBottom,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const MyText(
+                text:
+                    'Ingresa tu correo electrónico para recibir el enlace de restablecimiento.',
+                variant: MyTextVariant.subtitle,
+                textAlign: TextAlign.center,
+                fontSize: 13,
+              ),
+              const SizedBox(height: 18),
+              MyTextField(
+                controller: _emailCtrl,
+                hintText: 'Ingresa tu correo electrónico',
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                prefixIcon: Icons.mail_outline,
+                margin: EdgeInsets.zero,
+              ),
+              if (_message != null) ...[
+                const SizedBox(height: 12),
+                MyText(
+                  text: _message!,
+                  variant: MyTextVariant.bodyMuted,
+                  textAlign: TextAlign.center,
+                  fontSize: 12,
+                  customColor:
+                      _message!.startsWith('Te enviamos')
+                          ? AppColors.success
+                          : AppColors.textSecondary,
+                ),
+              ],
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed:
+                            _sending ? null : () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: AppColors.headerBottom.withOpacity(0.35),
+                            width: 1.2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDims.radiusLg,
+                            ),
+                          ),
+                          backgroundColor: Colors.white,
+                        ),
+                        child: const MyText(
+                          text: 'Cancelar',
+                          variant: MyTextVariant.normalBold,
+                          customColor: AppColors.headerBottom,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: MyButton(
+                      onTap: _sending ? null : _sendResetEmail,
+                      text: _sending ? 'Enviando...' : 'Enviar',
+                      loading: _sending,
+                      margin: EdgeInsets.zero,
+                      height: 48,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

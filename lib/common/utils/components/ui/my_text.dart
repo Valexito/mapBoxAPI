@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'app_styles.dart';
 
-enum MyTextVariant { title, normal, normalBold, body, bodyBold, bodyMuted }
+enum MyTextVariant {
+  title,
+  subtitle,
+  normal,
+  normalBold,
+  body,
+  bodyBold,
+  bodyMuted,
+}
 
 class MyText extends StatelessWidget {
   final String text;
@@ -22,52 +31,56 @@ class MyText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Paleta consistente con el Drawer
-    const blue = Color.fromARGB(255, 13, 47, 80); // acento/enlaces
-    const main = Color.fromARGB(255, 38, 63, 117); // textos principales
-    const muted = Color.fromARGB(255, 55, 89, 156); // textos secundarios
-
     TextStyle style;
+
     switch (variant) {
       case MyTextVariant.title:
         style = TextStyle(
-          color: blue,
-          fontWeight: FontWeight.bold,
-          fontSize: fontSize ?? 18,
-          letterSpacing: 1.2,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w800,
+          fontSize: fontSize ?? 22,
+          letterSpacing: 0.2,
+        );
+        break;
+      case MyTextVariant.subtitle:
+        style = TextStyle(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w500,
+          fontSize: fontSize ?? 14,
+          height: 1.4,
         );
         break;
       case MyTextVariant.normal:
         style = TextStyle(
-          color: main,
-          fontWeight: FontWeight.normal,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
           fontSize: fontSize ?? 14,
         );
         break;
       case MyTextVariant.normalBold:
         style = TextStyle(
-          color: main,
-          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
           fontSize: fontSize ?? 14,
         );
         break;
       case MyTextVariant.body:
         style = TextStyle(
-          color: main,
-          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
           fontSize: fontSize ?? 15,
         );
         break;
       case MyTextVariant.bodyBold:
         style = TextStyle(
-          color: main,
+          color: AppColors.textPrimary,
           fontWeight: FontWeight.w700,
           fontSize: fontSize ?? 15,
         );
         break;
       case MyTextVariant.bodyMuted:
         style = TextStyle(
-          color: muted,
+          color: AppColors.textSecondary,
           fontWeight: FontWeight.w400,
           fontSize: fontSize ?? 13,
         );
@@ -75,7 +88,7 @@ class MyText extends StatelessWidget {
     }
 
     return Text(
-      variant == MyTextVariant.title ? text.toUpperCase() : text,
+      text,
       textAlign: textAlign,
       style: style.copyWith(
         color: customColor ?? style.color,

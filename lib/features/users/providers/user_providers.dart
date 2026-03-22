@@ -32,9 +32,16 @@ final isProfileCompleteProvider = FutureProvider.family<bool, String>((
   final hasName = s(d['name']).isNotEmpty || s(d['displayName']).isNotEmpty;
   final hasPhone = s(d['phone']).isNotEmpty;
   final hasRole = s(d['role']).isNotEmpty;
+  final hasVehiclePlate = s(d['vehiclePlate']).isNotEmpty;
+  final hasVehicleType = s(d['vehicleType']).isNotEmpty;
   final completed = d['profileCompleted'] == true;
 
-  return (hasName && hasPhone && hasRole) || completed;
+  return (hasName &&
+          hasPhone &&
+          hasRole &&
+          hasVehiclePlate &&
+          hasVehicleType) ||
+      completed;
 });
 
 // ---------- Guardado de perfil ----------
@@ -43,17 +50,24 @@ final saveProfileProvider = Provider<
     required String name,
     required String phone,
     required String role,
+    required String vehiclePlate,
+    required String vehicleType,
   })
 >((ref) {
   return ({
     required String name,
     required String phone,
     required String role,
+    required String vehiclePlate,
+    required String vehicleType,
   }) async {
     final u = FirebaseAuth.instance.currentUser;
     if (u == null) throw StateError('No authenticated user.');
 
     final doc = ref.read(userDocRefProvider(u.uid));
+
+    final existing = await doc.get();
+    final alreadyCreatedAt = existing.data()?['createdAt'];
 
     await doc.set({
       'uid': u.uid,
@@ -62,9 +76,11 @@ final saveProfileProvider = Provider<
       'displayName': name.trim(),
       'phone': phone.trim(),
       'role': role.trim(),
+      'vehiclePlate': vehiclePlate.trim().toUpperCase(),
+      'vehicleType': vehicleType.trim(),
       'profileCompleted': true,
       'updatedAt': FieldValue.serverTimestamp(),
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': alreadyCreatedAt ?? FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     ref.invalidate(isProfileCompleteProvider(u.uid));
@@ -102,7 +118,44 @@ final iOwnAtLeastOneParkingProvider = FutureProvider<bool>((ref) async {
     return false;
   }
 });
+final updateBasicProfileProvider = Provider<
+  Future<void> Function({
+    required String name,
+    required String phone,
+    required String email,
+    String? dob,
+    String? gender,
+  })
+>((ref) {
+  return ({
+    required String name,
+    required String phone,
+    required String email,
+    String? dob,
+    String? gender,
+  }) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) throw StateError('No authenticated user.');
 
+    final doc = ref.read(userDocRefProvider(u.uid));
+
+    await doc.set({
+      'uid': u.uid,
+      'email': email.trim(),
+      'name': name.trim(),
+      'displayName': name.trim(),
+      'phone': phone.trim(),
+      'dob': (dob ?? '').trim(),
+      'gender': (gender ?? '').trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    ref.invalidate(isProfileCompleteProvider(u.uid));
+    ref.invalidate(canEnterAppProvider(u.uid));
+    ref.invalidate(myProfileStreamProvider);
+    ref.invalidate(myRoleStreamProvider);
+  };
+});
 // ---------- Rol efectivo ----------
 final myRoleStreamProvider = StreamProvider<UserRole>((ref) {
   final profileAsync = ref.watch(myProfileStreamProvider);
@@ -157,9 +210,12 @@ final canEnterAppProvider = FutureProvider.autoDispose.family<bool, String>((
         s(data['name']).isNotEmpty || s(data['displayName']).isNotEmpty;
     final hasPhone = s(data['phone']).isNotEmpty;
     final hasRole = roleStr.isNotEmpty;
+    final hasVehiclePlate = s(data['vehiclePlate']).isNotEmpty;
+    final hasVehicleType = s(data['vehicleType']).isNotEmpty;
     final completed = data['profileCompleted'] == true;
 
-    if ((hasName && hasPhone && hasRole) || completed) {
+    if ((hasName && hasPhone && hasRole && hasVehiclePlate && hasVehicleType) ||
+        completed) {
       return true;
     }
 

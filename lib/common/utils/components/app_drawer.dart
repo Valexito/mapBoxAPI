@@ -92,7 +92,7 @@ class AppDrawer extends ConsumerWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [AppColors.navyTop, AppColors.navyBottom],
+                    colors: [AppColors.headerTop, AppColors.headerBottom],
                   ),
                 ),
                 child: Column(
@@ -256,7 +256,7 @@ class _DrawerItemState extends State<_DrawerItem> {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = _pressed ? AppColors.navyBottom : Colors.transparent;
+    final Color bg = _pressed ? AppColors.headerBottom : Colors.transparent;
     final isDanger = widget.danger;
 
     final Color textColor =
@@ -266,7 +266,7 @@ class _DrawerItemState extends State<_DrawerItem> {
     final Color iconColor =
         _pressed
             ? Colors.white
-            : (isDanger ? Colors.red[700]! : AppColors.navyBottom);
+            : (isDanger ? Colors.red[700]! : AppColors.headerBottom);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -276,7 +276,7 @@ class _DrawerItemState extends State<_DrawerItem> {
           onTap: widget.onTap,
           onHighlightChanged: (v) => setState(() => _pressed = v),
           borderRadius: BorderRadius.circular(14),
-          splashColor: AppColors.navyTop.withOpacity(0.12),
+          splashColor: AppColors.headerTop.withOpacity(0.12),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             curve: Curves.easeOut,

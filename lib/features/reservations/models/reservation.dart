@@ -60,7 +60,7 @@ class Reservation {
       'userId': userId,
       'parkingId': parkingId,
       'parkingName': parkingName,
-      'spaceNumber': spaceNumber,
+      'spaceId': spaceNumber,
       'reservedAt': Timestamp.fromDate(reservedAt),
       'startedAt': Timestamp.fromDate(reservedAt), // alias para compatibilidad
       'endedAt': endedAt != null ? Timestamp.fromDate(endedAt!) : null,

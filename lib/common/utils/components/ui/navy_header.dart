@@ -19,45 +19,75 @@ class NavyHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          height: height,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.navyTop, AppColors.navyBottom],
-            ),
-            borderRadius:
-                roundedBottom
-                    ? const BorderRadius.only(
-                      bottomLeft: Radius.circular(AppDims.radiusLg),
-                      bottomRight: Radius.circular(AppDims.radiusLg),
-                    )
-                    : null,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    leading ?? const SizedBox(width: 40, height: 32),
-                    const SizedBox(width: 40, height: 32),
-                    trailing ?? const SizedBox(width: 40, height: 32),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...children,
-              ],
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Container(
+            height: height,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.headerTop, AppColors.headerBottom],
+              ),
+              borderRadius:
+                  roundedBottom
+                      ? const BorderRadius.only(
+                        bottomLeft: Radius.circular(AppDims.radiusXl),
+                        bottomRight: Radius.circular(AppDims.radiusXl),
+                      )
+                      : null,
             ),
           ),
-        ),
-      ],
+          Positioned(
+            top: -40,
+            right: -20,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 70,
+            left: -30,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      leading ?? const SizedBox(width: 40, height: 32),
+                      const SizedBox(width: 40, height: 32),
+                      trailing ?? const SizedBox(width: 40, height: 32),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ...children,
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

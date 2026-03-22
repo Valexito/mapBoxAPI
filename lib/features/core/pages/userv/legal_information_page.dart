@@ -32,7 +32,7 @@ class LegalInformationPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.pageBg,
       appBar: AppBar(
-        backgroundColor: AppColors.navyBottom,
+        backgroundColor: AppColors.headerBottom,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(

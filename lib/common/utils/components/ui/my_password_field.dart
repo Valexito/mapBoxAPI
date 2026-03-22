@@ -1,3 +1,4 @@
+// lib/common/utils/components/ui/my_password_field.dart
 import 'package:flutter/material.dart';
 import 'app_styles.dart';
 
@@ -10,6 +11,7 @@ class MyPasswordField extends StatefulWidget {
   final String? helperText;
   final String? errorText;
   final String? Function(String?)? validator;
+  final IconData? prefixIcon;
 
   const MyPasswordField({
     super.key,
@@ -20,6 +22,7 @@ class MyPasswordField extends StatefulWidget {
     this.helperText,
     this.errorText,
     this.validator,
+    this.prefixIcon,
   });
 
   @override
@@ -27,7 +30,7 @@ class MyPasswordField extends StatefulWidget {
 }
 
 class _MyPasswordFieldState extends State<MyPasswordField> {
-  final _focusNode = FocusNode();
+  final FocusNode _focusNode = FocusNode();
   bool _obscure = true;
 
   bool get _active =>
@@ -46,9 +49,19 @@ class _MyPasswordFieldState extends State<MyPasswordField> {
     super.dispose();
   }
 
+  Widget? _buildPrefix() {
+    final icon = widget.prefixIcon ?? Icons.lock_outline;
+    final color = _active ? AppColors.headerBottom : AppColors.primary;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 8, end: 4),
+      child: Icon(icon, color: color),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).inputDecorationTheme;
+    final radius = BorderRadius.circular(AppDims.radiusLg);
 
     final textStyle = TextStyle(
       color: _active ? AppColors.textPrimary : AppColors.textSecondary,
@@ -56,29 +69,48 @@ class _MyPasswordFieldState extends State<MyPasswordField> {
       fontSize: 15,
     );
 
-    final decoration = const InputDecoration(border: InputBorder.none)
-        .applyDefaults(theme)
-        .copyWith(
-          labelText: widget.labelText,
-          helperText: widget.helperText,
-          errorText: widget.errorText,
-          hintText: widget.hintText,
-          filled: true,
-          fillColor: _active ? Colors.white : AppColors.formFieldBg,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 16, // ↑
-            horizontal: 18, // ↑
-          ),
-          suffixIcon: IconButton(
-            onPressed: () => setState(() => _obscure = !_obscure),
-            icon: Icon(
-              _obscure
-                  ? Icons.visibility_outlined
-                  : Icons.visibility_off_outlined,
-              color: AppColors.navyBottom,
-            ),
-          ),
-        );
+    final baseBorder = OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide.none,
+    );
+
+    final focusedBorder = OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(
+        color: AppColors.headerBottom.withOpacity(0.45),
+        width: 1,
+      ),
+    );
+
+    final decoration = InputDecoration(
+      labelText: widget.labelText,
+      helperText: widget.helperText,
+      errorText: widget.errorText,
+      hintText: widget.hintText,
+      filled: true,
+      fillColor: _active ? Colors.white : AppColors.formFieldBg,
+      prefixIcon: _buildPrefix(),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+      border: baseBorder,
+      enabledBorder: baseBorder,
+      disabledBorder: baseBorder,
+      focusedBorder: focusedBorder,
+      errorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.danger, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.danger, width: 1.2),
+      ),
+      suffixIcon: IconButton(
+        onPressed: () => setState(() => _obscure = !_obscure),
+        icon: Icon(
+          _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+          color: _active ? AppColors.headerBottom : AppColors.textSecondary,
+        ),
+      ),
+    );
 
     final field =
         (widget.validator == null)
@@ -87,7 +119,7 @@ class _MyPasswordFieldState extends State<MyPasswordField> {
               focusNode: _focusNode,
               obscureText: _obscure,
               style: textStyle,
-              cursorColor: AppColors.navyBottom,
+              cursorColor: AppColors.headerBottom,
               decoration: decoration,
             )
             : TextFormField(
@@ -96,7 +128,7 @@ class _MyPasswordFieldState extends State<MyPasswordField> {
               obscureText: _obscure,
               validator: widget.validator,
               style: textStyle,
-              cursorColor: AppColors.navyBottom,
+              cursorColor: AppColors.headerBottom,
               decoration: decoration,
             );
 
@@ -106,27 +138,20 @@ class _MyPasswordFieldState extends State<MyPasswordField> {
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-          border:
-              _active
-                  ? Border.all(
-                    color: AppColors.navyBottom.withOpacity(0.45),
-                    width: 1,
-                  )
-                  : null,
+          borderRadius: radius,
           boxShadow:
               _active
                   ? [
                     BoxShadow(
-                      color: AppColors.navyBottom.withOpacity(0.28),
-                      blurRadius: 20,
+                      color: AppColors.headerBottom.withOpacity(0.18),
+                      blurRadius: 18,
                       spreadRadius: 0.5,
                       offset: const Offset(0, 6),
                     ),
                   ]
                   : [],
         ),
-        child: field,
+        child: ClipRRect(borderRadius: radius, child: field),
       ),
     );
   }

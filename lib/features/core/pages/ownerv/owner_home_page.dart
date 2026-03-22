@@ -26,7 +26,6 @@ class _OwnerHomePageState extends State<OwnerHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Protege todo el shell: OwnerOnly
     return OwnerOnly(
       builder: (_) {
         final pages = const [
@@ -35,17 +34,20 @@ class _OwnerHomePageState extends State<OwnerHomePage> {
           OwnerEarningsPage(),
           OwnerSettingsPage(),
         ];
+
         return Scaffold(
           backgroundColor: AppColors.pageBg,
           appBar: AppBar(
             title: Text(_tabs[_index].label),
             centerTitle: true,
-            backgroundColor: AppColors.navyBottom,
+            backgroundColor: AppColors.headerBottom,
           ),
           body: pages[_index],
           bottomNavigationBar: NavigationBar(
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() => _index = i),
+            backgroundColor: Colors.white,
+            indicatorColor: AppColors.primarySoft.withOpacity(0.25),
             destinations:
                 _tabs
                     .map(

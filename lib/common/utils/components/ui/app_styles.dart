@@ -1,34 +1,49 @@
-// app_styles.dart
 import 'package:flutter/material.dart';
 
-/// ===== TOKENS =====
 class AppColors {
-  static const primary = Color(0xFF1976D2);
-  static const navyTop = Color(0xFF0D1B2A);
-  static const navyBottom = Color(0xFF1B3A57);
+  static const primary = Color(0xFF3B82F6);
+  static const primaryDark = Color(0xFF1E3A5F);
+  static const primarySoft = Color(0xFF93C5FD);
 
-  static const pageBg = Color(0xFFF2F4F7);
+  // 🔵 MAIN HEADER COLORS (use these everywhere)
+  static const headerTop = Color(0xFF4F8FF7);
+  static const headerBottom = Color(0xFF1E5FD8);
 
-  // Texto
-  static const textPrimary = Color(0xFF111827);
-  static const textSecondary = Color(0xFF6B7280);
+  // 🔁 Aliases (so old code doesn't break)
+  static const navyTop = headerTop;
+  static const navyBottom = headerBottom;
 
-  // UI
-  static const cardDivider = Color(0xFFE9EEFF);
-  static const iconCircle = Color(0xFFEFF2F6);
+  static const pageBg = Color(0xFFF7FAFC);
+  static const cardBg = Colors.white;
+  static const formFieldBg = Color(0xFFF1F5F9);
 
-  // Fondo gris de los fields inactivos (estilo SmartNest)
-  static const formFieldBg = Color(0xFFF3F5F8);
+  static const textPrimary = Color(0xFF0F172A);
+  static const textSecondary = Color(0xFF64748B);
+  static const textHint = Color(0xFF94A3B8);
+
+  static const borderSoft = Color(0xFFE2E8F0);
+  static const iconCircle = Color(0xFFEAF2FF);
+
+  static const cardDivider = Color(0xFFE5E7EB);
+
+  static const success = Color(0xFF22C55E);
+  static const warning = Color(0xFFF59E0B);
+  static const danger = Color(0xFFEF4444);
 }
 
 class AppDims {
-  static const radiusLg = 26.0; // pill
-  static const radiusMd = 14.0;
-  static const padInputV = 14.0;
-  static const padInputH = 16.0;
+  static const radiusXl = 32.0;
+  static const radiusLg = 35.0;
+  static const radiusMd = 16.0;
+  static const radiusSm = 12.0;
+
+  static const padScreen = 20.0;
+  static const padInputV = 16.0;
+  static const padInputH = 18.0;
+
+  static const buttonHeight = 56.0;
 }
 
-/// ===== THEME ÚNICO (Material 2) =====
 class AppTheme {
   static ThemeData build() {
     final base = ThemeData.light(useMaterial3: false);
@@ -38,92 +53,17 @@ class AppTheme {
       primaryColor: AppColors.primary,
       colorScheme: base.colorScheme.copyWith(
         primary: AppColors.primary,
-        secondary: AppColors.navyBottom,
-        surface: Colors.white,
+        secondary: AppColors.primaryDark,
+        surface: AppColors.cardBg,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.navyTop,
+        backgroundColor: AppColors.headerBottom,
         elevation: 0,
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
-      iconTheme: const IconThemeData(color: AppColors.navyBottom),
-      dividerColor: AppColors.cardDivider,
-
-      // Tipografías
-      textTheme: base.textTheme.copyWith(
-        titleLarge: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-          color: AppColors.primary,
-          letterSpacing: 1.2,
-        ),
-        bodyMedium: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 15,
-          color: AppColors.textPrimary,
-        ),
-        bodySmall: const TextStyle(
-          fontWeight: FontWeight.w400,
-          fontSize: 13,
-          color: AppColors.textSecondary,
-        ),
-      ),
-
-      // Botones que ya usas
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white54),
-          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-      switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.all(AppColors.navyBottom),
-        trackColor: MaterialStateProperty.all(
-          AppColors.navyBottom.withOpacity(0.25),
-        ),
-      ),
-
-      // === Inputs: pill gris, sin líneas, sin bordes visibles ===
-      inputDecorationTheme: InputDecorationTheme(
-        isDense: true,
-        filled: true,
-        fillColor: AppColors.formFieldBg,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: AppDims.padInputV,
-          horizontal: AppDims.padInputH,
-        ),
-        hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-        labelStyle: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13,
-        ),
-        border: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.redAccent),
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.redAccent),
-          borderRadius: BorderRadius.circular(AppDims.radiusLg),
-        ),
-      ),
+      iconTheme: const IconThemeData(color: AppColors.primaryDark),
+      dividerColor: AppColors.borderSoft,
     );
   }
 }

@@ -29,7 +29,7 @@ class ConfigurationsPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.pageBg,
       appBar: AppBar(
-        backgroundColor: AppColors.navyBottom,
+        backgroundColor: AppColors.headerBottom,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
@@ -207,7 +207,7 @@ class _SwitchTile extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: (subtitle == null) ? null : Text(subtitle!),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      activeColor: AppColors.navyBottom,
+      activeColor: AppColors.headerBottom,
     );
   }
 }
@@ -232,7 +232,7 @@ class _ArrowTile extends StatelessWidget {
       leading: CircleAvatar(
         radius: 18,
         backgroundColor: AppColors.iconCircle,
-        child: Icon(icon, color: AppColors.navyBottom),
+        child: Icon(icon, color: AppColors.headerBottom),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: (subtitle == null) ? null : Text(subtitle!),

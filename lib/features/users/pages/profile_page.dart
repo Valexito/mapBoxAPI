@@ -74,7 +74,7 @@ class ProfilePage extends ConsumerWidget {
                                     child: const Icon(
                                       Icons.person,
                                       size: 54,
-                                      color: AppColors.navyBottom,
+                                      color: AppColors.headerBottom,
                                     ),
                                   ),
                         ),
@@ -211,7 +211,7 @@ class _Divider extends StatelessWidget {
   const _Divider();
   @override
   Widget build(BuildContext context) =>
-      const Divider(height: 1, thickness: 1, color: AppColors.cardDivider);
+      const Divider(height: 1, thickness: 1, color: AppColors.borderSoft);
 }
 
 enum _Go { configure, notifications, reservations, owner, signout, none }
@@ -269,7 +269,7 @@ class _ActionItem extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Icon(icon, size: 20, color: AppColors.navyBottom),
+              child: Icon(icon, size: 20, color: AppColors.headerBottom),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -343,7 +343,7 @@ class _Shortcut extends StatelessWidget {
                   color: AppColors.iconCircle,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 18, color: AppColors.navyBottom),
+                child: Icon(icon, size: 18, color: AppColors.headerBottom),
               ),
               const SizedBox(width: 12),
               Expanded(
