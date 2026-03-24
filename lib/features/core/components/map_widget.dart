@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mapbox_api/common/env/env.dart';
 import 'package:mapbox_api/features/core/services/favorite_service.dart';
 import 'package:mapbox_api/features/core/components/home_bottom_parking_details.dart';
 import 'package:mapbox_api/features/reservations/services/geolocator.dart';
 import 'package:mapbox_api/features/reservations/services/parking_service.dart';
 import 'package:mapbox_api/features/reservations/models/parking.dart';
-
-const MAP_BOX_ACCESS_TOKEN =
-    'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key, this.mapController, this.onMapTap});
@@ -35,17 +33,21 @@ class _MapWidgetState extends State<MapWidget> {
   Future<void> _loadCurrentLocation() async {
     try {
       final location = await getCurrentLocation();
+      if (!mounted) return;
       setState(() => currentPosition = location);
-      _loadParkingMarkers();
+      await _loadParkingMarkers();
     } catch (e) {
       debugPrint('Error obteniendo ubicación: $e');
+      if (!mounted) return;
       setState(() => currentPosition = LatLng(14.834999, -91.518669));
-      _loadParkingMarkers();
+      await _loadParkingMarkers();
     }
   }
 
   Future<void> _loadParkingMarkers() async {
     final parkings = await ParkingService().getAllParkings();
+    if (!mounted) return;
+
     setState(() {
       _parkingMarkers =
           parkings.map((p) {
@@ -139,23 +141,24 @@ class _MapWidgetState extends State<MapWidget> {
     );
   }
 
-  // ===== Controles de cámara / zoom =====
   void zoomBy(double delta) {
     final cam = _mapController.camera;
     final newZoom = (cam.zoom + delta).clamp(2.0, 20.0);
     _mapController.move(cam.center, newZoom.toDouble());
   }
 
-  void centerOn(LatLng target, {double zoom = 16}) =>
-      _mapController.move(target, zoom);
+  void centerOn(LatLng target, {double zoom = 16}) {
+    _mapController.move(target, zoom);
+  }
 
   void centerOnUser() {
-    if (currentPosition != null) _mapController.move(currentPosition!, 16.0);
+    if (currentPosition != null) {
+      _mapController.move(currentPosition!, 16.0);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ⛔ Nada de Scaffold aquí: HomePage ya tiene el suyo
     if (currentPosition == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -167,16 +170,14 @@ class _MapWidgetState extends State<MapWidget> {
           options: MapOptions(
             initialCenter: currentPosition!,
             initialZoom: 16,
-            onTap:
-                (_, __) =>
-                    widget.onMapTap?.call(), // minimiza panel en HomePage
+            onTap: (_, __) => widget.onMapTap?.call(),
           ),
           children: [
             TileLayer(
               urlTemplate:
-                  'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$MAP_BOX_ACCESS_TOKEN',
+                  'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${Env.mapboxToken}',
               additionalOptions: {
-                'accessToken': MAP_BOX_ACCESS_TOKEN,
+                'accessToken': Env.mapboxToken,
                 'id': 'mapbox/streets-v12',
               },
               userAgentPackageName: 'com.example.mapbox_api',
@@ -198,18 +199,16 @@ class _MapWidgetState extends State<MapWidget> {
             ),
           ],
         ),
-
-        // Controles flotantes
         Positioned(
-          right: 16,
-          bottom: 200,
+          right: 18,
+          bottom: 245,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _roundBtn(icon: Icons.add, onTap: () => zoomBy(1)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               _roundBtn(icon: Icons.remove, onTap: () => zoomBy(-1)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               _roundBtn(icon: Icons.my_location, onTap: centerOnUser),
             ],
           ),
@@ -222,12 +221,12 @@ class _MapWidgetState extends State<MapWidget> {
     return Material(
       color: Colors.white,
       shape: const CircleBorder(),
-      elevation: 3,
+      elevation: 4,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           child: Icon(icon, color: Colors.black),
         ),
       ),

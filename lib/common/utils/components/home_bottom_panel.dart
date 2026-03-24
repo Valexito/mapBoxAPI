@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import 'package:mapbox_api/common/env/env.dart';
+import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_textfield.dart';
 import 'package:mapbox_api/features/core/services/recent_searches.dart';
-import 'package:mapbox_api/common/env/env.dart';
 
 class HomeBottomPanel extends StatefulWidget {
   const HomeBottomPanel({
@@ -32,8 +33,8 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
   Timer? _debounce;
 
   static const _debounceMs = 350;
-  static const _minSize = 0.18;
-  static const _maxSize = 0.60;
+  static const _minSize = 0.22;
+  static const _maxSize = 0.72;
 
   @override
   void initState() {
@@ -75,13 +76,16 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
 
   Future<void> _fetchSuggestions(String value) async {
     final q = value.trim();
+
     if (q.length < 3) {
+      if (!mounted) return;
       setState(() => _suggestions = []);
       return;
     }
 
     final token = Env.mapboxToken;
     if (token.isEmpty) {
+      if (!mounted) return;
       setState(() => _suggestions = []);
       return;
     }
@@ -98,14 +102,14 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final features = (data['features'] as List?) ?? [];
+
         setState(() {
           _suggestions = features
               .map<Map<String, dynamic>>(
                 (f) => {
                   'name': f['text'] ?? '',
                   'address': f['place_name'] ?? '',
-                  'coordinates':
-                      (f['center'] ?? const []) as List, // [lng, lat]
+                  'coordinates': (f['center'] ?? const []) as List,
                 },
               )
               .toList(growable: false);
@@ -125,22 +129,138 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
     required List coords,
   }) async {
     if (coords.length < 2) return;
+
     final lng = (coords[0] as num).toDouble();
     final lat = (coords[1] as num).toDouble();
     final target = LatLng(lat, lng);
 
-    widget.onPlaceSelected(target); // mueve el mapa
+    widget.onPlaceSelected(target);
+
     await RecentSearches.add(
       RecentItem(name: name, address: address, lat: lat, lng: lng),
     );
     await _loadRecents();
 
-    _animateTo(_minSize); // minimizar
+    _animateTo(_minSize);
     FocusScope.of(context).unfocus();
+  }
+
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: MyText(
+        text: text,
+        variant: MyTextVariant.normalBold,
+        fontSize: 15,
+        customColor: AppColors.headerBottom,
+      ),
+    );
+  }
+
+  Widget _resultCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDims.radiusMd),
+        elevation: 0,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDims.radiusMd),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDims.radiusMd),
+              border: Border.all(color: AppColors.borderSoft),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.headerBottom.withOpacity(0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.iconCircle,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MyText(
+                        text: title,
+                        variant: MyTextVariant.bodyBold,
+                        fontSize: 14,
+                      ),
+                      const SizedBox(height: 4),
+                      MyText(
+                        text: subtitle,
+                        variant: MyTextVariant.bodyMuted,
+                        fontSize: 12,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDims.radiusMd),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Column(
+        children: const [
+          Icon(
+            Icons.history_toggle_off_rounded,
+            size: 30,
+            color: AppColors.textSecondary,
+          ),
+          SizedBox(height: 10),
+          MyText(
+            text: 'Sin lugares recientes',
+            variant: MyTextVariant.bodyMuted,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasSuggestions = _suggestions.isNotEmpty;
+
     return DraggableScrollableSheet(
       controller: widget.controller,
       initialChildSize: _minSize,
@@ -151,121 +271,98 @@ class _HomeBottomPanelState extends State<HomeBottomPanel> {
           behavior: HitTestBehavior.opaque,
           onTap: () => _animateTo(_maxSize),
           child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(34),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 12,
-                  offset: Offset(0, -2),
+                  color: AppColors.headerBottom.withOpacity(0.10),
+                  blurRadius: 18,
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      height: 6,
-                      width: 40,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  height: 5,
+                  width: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.borderSoft,
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  MyTextField(
-                    controller: _searchController,
-                    hintText: '¿A dónde quieres ir?',
-                    obscureText: false,
-                    keyboardType: TextInputType.text,
-                    prefixIcon: Icons.search,
-                    onChanged: _onSearchChanged,
-                    margin: EdgeInsets.zero,
-                    focusNode: _focus,
-                  ),
-                  const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const MyText(
+                          text: 'Buscar destino',
+                          variant: MyTextVariant.title,
+                          customColor: AppColors.headerBottom,
+                          fontSize: 20,
+                        ),
+                        const SizedBox(height: 6),
 
-                  if (_suggestions.isNotEmpty) ...[
-                    const MyText(
-                      text: 'Sugerencias',
-                      variant: MyTextVariant.normalBold,
-                    ),
-                    const SizedBox(height: 8),
-                    ..._suggestions.map(
-                      (s) => Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(
-                              Icons.place,
-                              color: Color(0xFF1976D2),
-                            ),
-                            title: MyText(
-                              text: s['name'] ?? '',
-                              variant: MyTextVariant.body,
-                            ),
-                            subtitle: MyText(
-                              text: s['address'] ?? '',
-                              variant: MyTextVariant.bodyMuted,
-                            ),
-                            onTap:
-                                () => _selectPlace(
-                                  name: s['name'] ?? '',
-                                  address: s['address'] ?? '',
-                                  coords: s['coordinates'] ?? const [],
-                                ),
-                          ),
-                          Divider(height: 1, color: Colors.grey[300]),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    const MyText(
-                      text: 'Recientes',
-                      variant: MyTextVariant.normalBold,
-                    ),
-                    const SizedBox(height: 8),
-                    if (_recents.isEmpty)
-                      const MyText(
-                        text: 'Sin lugares recientes',
-                        variant: MyTextVariant.bodyMuted,
-                      )
-                    else
-                      ..._recents.map(
-                        (r) => Column(
-                          children: [
-                            ListTile(
-                              leading: const Icon(
-                                Icons.history,
-                                color: Colors.black54,
-                              ),
-                              title: MyText(
-                                text: r.name,
-                                variant: MyTextVariant.body,
-                              ),
-                              subtitle: MyText(
-                                text: r.address,
-                                variant: MyTextVariant.bodyMuted,
-                              ),
+                        const SizedBox(height: 16),
+                        MyTextField(
+                          controller: _searchController,
+                          hintText: '¿A dónde quieres ir?',
+                          keyboardType: TextInputType.text,
+                          prefixIcon: Icons.search_rounded,
+                          onChanged: _onSearchChanged,
+                          margin: EdgeInsets.zero,
+                          focusNode: _focus,
+                        ),
+                        const SizedBox(height: 18),
+                        if (hasSuggestions) ...[
+                          _sectionTitle('Sugerencias'),
+                          ..._suggestions.map(
+                            (s) => _resultCard(
+                              icon: Icons.place_outlined,
+                              iconColor: AppColors.headerBottom,
+                              title: (s['name'] ?? '') as String,
+                              subtitle: (s['address'] ?? '') as String,
                               onTap:
                                   () => _selectPlace(
-                                    name: r.name,
-                                    address: r.address,
-                                    coords: [r.lng, r.lat],
+                                    name: s['name'] ?? '',
+                                    address: s['address'] ?? '',
+                                    coords: s['coordinates'] ?? const [],
                                   ),
                             ),
-                            Divider(height: 1, color: Colors.grey[300]),
-                          ],
-                        ),
-                      ),
-                  ],
-                ],
-              ),
+                          ),
+                        ] else ...[
+                          _sectionTitle('Recientes'),
+                          if (_recents.isEmpty)
+                            _emptyState()
+                          else
+                            ..._recents.map(
+                              (r) => _resultCard(
+                                icon: Icons.history_rounded,
+                                iconColor: AppColors.textSecondary,
+                                title: r.name,
+                                subtitle: r.address,
+                                onTap:
+                                    () => _selectPlace(
+                                      name: r.name,
+                                      address: r.address,
+                                      coords: [r.lng, r.lat],
+                                    ),
+                              ),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );

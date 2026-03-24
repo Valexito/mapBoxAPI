@@ -1,51 +1,56 @@
-// lib/features/reservations/pages/route_view_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:mapbox_api/common/env/env.dart';
+import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:mapbox_api/features/reservations/components/route_bottom_info_card.dart';
+import 'package:mapbox_api/features/reservations/providers/directions_providers.dart';
 import 'package:mapbox_api/features/reservations/providers/location_providers.dart';
 import 'package:mapbox_api/features/reservations/providers/map_providers.dart';
-import 'package:mapbox_api/features/reservations/providers/directions_providers.dart';
-import 'package:mapbox_api/features/reservations/components/route_bottom_info_card.dart';
 
 class RouteViewPage extends ConsumerWidget {
   final LatLng destination;
   final String parkingName;
+  final int? spaceNumber;
+  final String? reservationId;
+
   const RouteViewPage({
     super.key,
     required this.destination,
     required this.parkingName,
+    this.spaceNumber,
+    this.reservationId,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final map = ref.watch(mapControllerProvider);
-    // 1) Obtener origen (con fallback si falla)
     final originAsync = ref.watch(currentLocationProvider);
 
     return originAsync.when(
-      loading: () => const _ScaffoldLoader(),
+      loading: () => const _RouteLoaderPage(),
       error:
-          (e, _) => _ErrorScaffold(
+          (e, _) => _RouteErrorPage(
             message:
-                'No se pudo obtener tu ubicación.\n$e\n\nActiva GPS y permisos y reintenta.',
+                'No se pudo obtener tu ubicación.\n$e\n\nActiva GPS y permisos e inténtalo de nuevo.',
             onRetry: () => ref.refresh(currentLocationProvider),
           ),
       data: (origin) {
-        // 2) Obtener ruta/distancia/tiempo con providers family
         final args = (origin: origin, destination: destination);
         final pointsAsync = ref.watch(routePointsProvider(args));
         final distanceAsync = ref.watch(routeDistanceProvider(args));
         final durationAsync = ref.watch(routeDurationProvider(args));
 
         return pointsAsync.when(
-          loading: () => const _ScaffoldLoader(),
+          loading: () => const _RouteLoaderPage(),
           error:
-              (e, _) => _ErrorScaffold(
+              (e, _) => _RouteErrorPage(
                 message:
-                    'No se pudo calcular la ruta.\n$e\n\nVerifica tu conexión o el MAPBOX_TOKEN.',
+                    'No se pudo calcular la ruta.\n$e\n\nVerifica tu conexión o el token de Mapbox.',
                 onRetry: () {
                   ref.invalidate(routePointsProvider(args));
                   ref.invalidate(routeDistanceProvider(args));
@@ -62,92 +67,98 @@ class RouteViewPage extends ConsumerWidget {
               orElse: () => '—',
             );
 
-            const navyBottom = Color(0xFF1B3A57);
-            return Scaffold(
-              backgroundColor: const Color(0xFFF2F4F7),
-              body: Stack(
-                children: [
-                  FlutterMap(
-                    mapController: map,
-                    options: MapOptions(
-                      initialCenter: origin,
-                      initialZoom: 15,
-                      interactionOptions: const InteractionOptions(
-                        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-                      ),
-                    ),
-                    children: [
-                      // === Mapbox Streets (mismo look que tu 1a captura) ===
-                      TileLayer(
-                        urlTemplate:
-                            'https://api.mapbox.com/styles/v1/{id}/tiles/512/{z}/{x}/{y}@2x?access_token={accessToken}',
-                        additionalOptions: const {
-                          'accessToken': String.fromEnvironment('MAPBOX_TOKEN'),
-                          'id': 'mapbox/streets-v12',
-                        },
-                        tileProvider: NetworkTileProvider(),
-                      ),
-
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: points,
-                            strokeWidth: 6,
-                            color: navyBottom,
-                          ),
-                        ],
-                      ),
-                      MarkerLayer(
-                        markers: [
-                          _pin(
-                            origin,
-                            const Icon(
-                              Icons.my_location,
-                              color: Color(0xFF16A34A),
-                              size: 22,
-                            ),
-                          ),
-                          _pin(
-                            destination,
-                            const Icon(
-                              Icons.location_on,
-                              color: Colors.red,
-                              size: 26,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  _TopGradientHeader(
-                    title: 'Ruta a',
-                    subtitle: parkingName,
-                    onBack: () => Navigator.pop(context),
-                  ),
-                  Positioned(
-                    top: 100,
-                    left: 16,
-                    right: 16,
-                    child: _RouteSummaryCard(
-                      distance: distance,
-                      duration: duration,
-                    ),
-                  ),
-                  Positioned(
-                    right: 16,
-                    bottom: 140,
-                    child: _RecenterButton(
-                      onTap: () => map.move(origin, map.camera.zoom),
-                    ),
-                  ),
-                ],
+            return Theme(
+              data: Theme.of(context).copyWith(
+                bottomSheetTheme: const BottomSheetThemeData(
+                  backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                ),
               ),
-              bottomSheet: RouteBottomInfoCard(
-                parkingName: parkingName,
-                distance: distance,
-                duration: duration,
-                onNavigate: () {},
-                onCancelLater: () => Navigator.pop(context),
+              child: Scaffold(
+                backgroundColor: AppColors.pageBg,
+                body: Stack(
+                  children: [
+                    FlutterMap(
+                      mapController: map,
+                      options: MapOptions(
+                        initialCenter: origin,
+                        initialZoom: 15,
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                        ),
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://api.mapbox.com/styles/v1/{id}/tiles/512/{z}/{x}/{y}@2x?access_token={accessToken}',
+                          additionalOptions: {
+                            'accessToken': Env.mapboxToken,
+                            'id': 'mapbox/streets-v12',
+                          },
+                          tileProvider: NetworkTileProvider(),
+                        ),
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: points,
+                              strokeWidth: 6,
+                              color: AppColors.headerBottom,
+                            ),
+                          ],
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            _mapPin(
+                              origin,
+                              icon: Icons.my_location_rounded,
+                              iconColor: const Color(0xFF16A34A),
+                            ),
+                            _mapPin(
+                              destination,
+                              icon: Icons.location_on_rounded,
+                              iconColor: Colors.red,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    _RouteHeader(
+                      parkingName: parkingName,
+                      onBack: () => Navigator.pop(context),
+                    ),
+                    Positioned(
+                      top: 132,
+                      left: 18,
+                      right: 18,
+                      child: _RouteInfoCard(
+                        parkingName: parkingName,
+                        distance: distance,
+                        duration: duration,
+                      ),
+                    ),
+                    Positioned(
+                      right: 16,
+                      bottom: 260,
+                      child: _RecenterButton(
+                        onTap: () => map.move(origin, map.camera.zoom),
+                      ),
+                    ),
+                  ],
+                ),
+                bottomSheet: RouteBottomInfoCard(
+                  parkingName: parkingName,
+                  distance: distance,
+                  duration: duration,
+                  destination: destination,
+                  spaceNumber: spaceNumber,
+                  reservationStatus:
+                      reservationId == null
+                          ? 'Dirigiéndote a tu espacio reservado'
+                          : 'Reserva activa #$reservationId',
+                  onGoToReservations: () {
+                    Navigator.of(context).pushNamed('/reservationsPage');
+                  },
+                ),
               ),
             );
           },
@@ -156,113 +167,168 @@ class RouteViewPage extends ConsumerWidget {
     );
   }
 
-  Marker _pin(LatLng p, Widget icon) => Marker(
-    point: p,
-    width: 44,
-    height: 44,
-    child: Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Center(child: icon),
-    ),
-  );
-}
-
-class _ScaffoldLoader extends StatelessWidget {
-  const _ScaffoldLoader();
-
-  @override
-  Widget build(BuildContext context) => const Scaffold(
-    backgroundColor: Color(0xFFF2F4F7),
-    body: Center(child: CircularProgressIndicator()),
-  );
-}
-
-class _ErrorScaffold extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorScaffold({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF2F4F7),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              size: 42,
-              color: Colors.orange,
-            ),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
+  Marker _mapPin(
+    LatLng point, {
+    required IconData icon,
+    required Color iconColor,
+  }) {
+    return Marker(
+      point: point,
+      width: 46,
+      height: 46,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
           ],
         ),
+        child: Center(child: Icon(icon, color: iconColor, size: 23)),
       ),
-    ),
-  );
+    );
+  }
 }
 
-class _TopGradientHeader extends StatelessWidget {
-  const _TopGradientHeader({
-    required this.title,
-    required this.subtitle,
-    required this.onBack,
-  });
-  final String title;
-  final String subtitle;
+class _RouteHeader extends StatelessWidget {
+  final String parkingName;
   final VoidCallback onBack;
-  static const navyTop = Color(0xFF0D1B2A);
-  static const navyBottom = Color(0xFF1B3A57);
+
+  const _RouteHeader({required this.parkingName, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 120,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [navyTop, navyBottom],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const MyText(text: 'RUTA', variant: MyTextVariant.title),
-                  const SizedBox(height: 2),
-                  MyText(
-                    text: '$title $subtitle',
-                    variant: MyTextVariant.normal,
-                    fontSize: 13,
-                  ),
-                ],
+    return SizedBox(
+      height: 128,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Container(
+            height: 128,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.headerTop, AppColors.headerBottom],
               ),
+            ),
+          ),
+          Positioned(
+            top: 32,
+            left: -20,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            top: -14,
+            right: -10,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 15,
+            left: 14,
+            child: SafeArea(
+              bottom: false,
+              child: TextButton.icon(
+                onPressed: onBack,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                ),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+                label: const Text('Regresar'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteInfoCard extends StatelessWidget {
+  final String parkingName;
+  final String distance;
+  final String duration;
+
+  const _RouteInfoCard({
+    required this.parkingName,
+    required this.distance,
+    required this.duration,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.headerBottom.withOpacity(0.12),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const MyText(
+              text: 'Ruta al parqueo',
+              variant: MyTextVariant.title,
+              customColor: AppColors.headerBottom,
+              fontSize: 21,
+            ),
+            const SizedBox(height: 6),
+            MyText(
+              text: parkingName,
+              variant: MyTextVariant.bodyMuted,
+              fontSize: 13,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniInfoTile(
+                    icon: Icons.route_rounded,
+                    label: 'Distancia',
+                    value: distance,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MiniInfoTile(
+                    icon: Icons.access_time_rounded,
+                    label: 'Tiempo',
+                    value: duration,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -271,75 +337,250 @@ class _TopGradientHeader extends StatelessWidget {
   }
 }
 
-class _RouteSummaryCard extends StatelessWidget {
-  const _RouteSummaryCard({required this.distance, required this.duration});
-  final String distance;
-  final String duration;
+class _MiniInfoTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _MiniInfoTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Material(
-      elevation: 8,
-      borderRadius: BorderRadius.circular(16),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            const Icon(Icons.directions_walk, color: Color(0xFF1B3A57)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: MyText(
-                text: 'Distancia: $distance',
-                variant: MyTextVariant.body,
-                fontSize: 14,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.formFieldBg,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              color: AppColors.iconCircle,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 10),
-            const Icon(Icons.timer_outlined, color: Color(0xFF1B3A57)),
-            const SizedBox(width: 8),
-            MyText(
-              text: duration,
-              variant: MyTextVariant.bodyBold,
-              fontSize: 14,
+            child: Icon(icon, size: 18, color: AppColors.headerBottom),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MyText(
+                  text: label,
+                  variant: MyTextVariant.bodyMuted,
+                  fontSize: 11,
+                ),
+                const SizedBox(height: 2),
+                MyText(
+                  text: value,
+                  variant: MyTextVariant.bodyBold,
+                  fontSize: 13,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _RecenterButton extends StatelessWidget {
-  const _RecenterButton({required this.onTap});
   final VoidCallback onTap;
-  static const navyTop = Color(0xFF0D1B2A);
-  static const navyBottom = Color(0xFF1B3A57);
+
+  const _RecenterButton({required this.onTap});
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Ink(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [navyTop, navyBottom],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 6,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 52,
+          height: 52,
+          child: Icon(
+            Icons.my_location_rounded,
+            color: AppColors.headerBottom,
+            size: 24,
           ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 6,
-              offset: Offset(0, 3),
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteLoaderPage extends StatelessWidget {
+  const _RouteLoaderPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.pageBg,
+      body: Column(
+        children: [
+          SizedBox(
+            height: 128,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                Container(
+                  height: 128,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [AppColors.headerTop, AppColors.headerBottom],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 32,
+                  left: -20,
+                  child: Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.10),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: -14,
+                  right: -10,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: const Center(
-          child: Icon(Icons.my_location, color: Colors.white, size: 22),
-        ),
+          ),
+          const Expanded(child: Center(child: CircularProgressIndicator())),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteErrorPage extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _RouteErrorPage({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.pageBg,
+      body: Column(
+        children: [
+          SizedBox(
+            height: 128,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                Container(
+                  height: 128,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [AppColors.headerTop, AppColors.headerBottom],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 32,
+                  left: -20,
+                  child: Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.10),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: -14,
+                  right: -10,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.headerBottom.withOpacity(0.10),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 42,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: MyButton(
+                          text: 'Reintentar',
+                          onTap: onRetry,
+                          margin: EdgeInsets.zero,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

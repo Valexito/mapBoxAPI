@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mapbox_api/common/env/env.dart';
 import 'package:mapbox_api/features/reservations/services/geolocator.dart';
-
-const _MAPBOX_TOKEN =
-    'pk.eyJ1IjoiYWxleC1hcmd1ZXRhIiwiYSI6ImNtYm9veml5MjA0dDUyd3B3YXI1ZGxqeWsifQ.4WNWf4fqoNZeL5cByoS05A';
 
 class MapPickPage extends StatefulWidget {
   const MapPickPage({super.key});
+
   @override
   State<MapPickPage> createState() => _MapPickPageState();
 }
@@ -61,9 +60,9 @@ class _MapPickPageState extends State<MapPickPage> {
             children: [
               TileLayer(
                 urlTemplate:
-                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$_MAPBOX_TOKEN',
+                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${Env.mapboxToken}',
                 additionalOptions: {
-                  'accessToken': _MAPBOX_TOKEN,
+                  'accessToken': Env.mapboxToken,
                   'id': 'mapbox/streets-v12',
                 },
                 userAgentPackageName: 'com.example.mapbox_api',

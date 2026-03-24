@@ -1,166 +1,407 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:mapbox_api/common/utils/components/ui/app_styles.dart';
 import 'package:mapbox_api/common/utils/components/ui/my_button.dart';
+import 'package:mapbox_api/common/utils/components/ui/my_text.dart';
 
 class RouteBottomInfoCard extends StatelessWidget {
   final String parkingName;
   final String distance;
   final String duration;
-  final VoidCallback onNavigate;
-  final VoidCallback onCancelLater;
+  final int? spaceNumber;
+  final String reservationStatus;
+  final LatLng destination;
+  final VoidCallback onGoToReservations;
 
   const RouteBottomInfoCard({
     super.key,
     required this.parkingName,
     required this.distance,
     required this.duration,
-    required this.onNavigate,
-    required this.onCancelLater,
+    required this.destination,
+    required this.onGoToReservations,
+    this.spaceNumber,
+    this.reservationStatus = 'Reserva activa',
   });
 
-  static const _navyLight = Color(0xFF1B3A57);
+  Future<void> _openNavigationChooser(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(26),
+            topRight: Radius.circular(26),
+          ),
+          child: Material(
+            color: const Color(0xFFF8FAFC),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSoft,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const MyText(
+                    text: 'Abrir navegación',
+                    variant: MyTextVariant.title,
+                    customColor: AppColors.headerBottom,
+                    fontSize: 20,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  const MyText(
+                    text: 'Selecciona la app con la que deseas navegar.',
+                    variant: MyTextVariant.bodyMuted,
+                    fontSize: 12,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  _NavAppTile(
+                    icon: Icons.map_rounded,
+                    title: 'Google Maps',
+                    subtitle: 'Abrir ruta en Google Maps',
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _openGoogleMaps();
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _NavAppTile(
+                    icon: Icons.navigation_rounded,
+                    title: 'Waze',
+                    subtitle: 'Abrir ruta en Waze',
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _openWaze();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openGoogleMaps() async {
+    final lat = destination.latitude;
+    final lng = destination.longitude;
+
+    final googleMapsApp = Uri.parse(
+      'comgooglemaps://?daddr=$lat,$lng&directionsmode=driving',
+    );
+    final googleMapsWeb = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+
+    if (await canLaunchUrl(googleMapsApp)) {
+      await launchUrl(googleMapsApp, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    await launchUrl(googleMapsWeb, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _openWaze() async {
+    final lat = destination.latitude;
+    final lng = destination.longitude;
+
+    final wazeUri = Uri.parse('waze://?ll=$lat,$lng&navigate=yes');
+    final wazeWeb = Uri.parse('https://waze.com/ul?ll=$lat,$lng&navigate=yes');
+
+    if (await canLaunchUrl(wazeUri)) {
+      await launchUrl(wazeUri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    await launchUrl(wazeWeb, mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomSafe),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            MyText(
-              text: parkingName,
-              fontSize: 18,
-              variant: MyTextVariant.title,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: const [
-                _InfoChip(icon: Icons.directions_walk, label: 'Distancia'),
-                SizedBox(width: 10),
-                _InfoChip(icon: Icons.timer_outlined, label: 'Tiempo'),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(26),
+        topRight: Radius.circular(26),
+      ),
+      child: Material(
+        color: const Color(0xFFF8FAFC),
+        elevation: 18,
+        shadowColor: AppColors.headerBottom.withOpacity(0.10),
+        child: SafeArea(
+          top: false,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: MyText(
-                    text: distance,
-                    variant: MyTextVariant.bodyBold,
-                    fontSize: 14,
+                Container(
+                  width: 42,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.borderSoft,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: MyText(
-                    text: duration,
-                    variant: MyTextVariant.bodyBold,
-                    fontSize: 14,
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: MyButton(text: 'Navegar', onTap: onNavigate),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: onCancelLater,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: _navyLight, width: 1.6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        color: AppColors.iconCircle,
+                        shape: BoxShape.circle,
                       ),
-                      child: const MyText(
-                        text: 'Más tarde',
-                        variant: MyTextVariant.normalBold,
-                        fontSize: 16,
+                      child: const Icon(
+                        Icons.local_parking_rounded,
+                        color: AppColors.headerBottom,
+                        size: 22,
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          MyText(
+                            text: parkingName,
+                            variant: MyTextVariant.bodyBold,
+                            fontSize: 16,
+                          ),
+                          const SizedBox(height: 4),
+                          MyText(
+                            text: reservationStatus,
+                            variant: MyTextVariant.bodyMuted,
+                            fontSize: 12,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'Activo',
+                        style: TextStyle(
+                          color: Color(0xFF16A34A),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MiniDetailTile(
+                        icon: Icons.pin_outlined,
+                        title: 'Espacio',
+                        value:
+                            spaceNumber == null
+                                ? 'No definido'
+                                : '$spaceNumber',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: _MiniDetailTile(
+                        icon: Icons.navigation_outlined,
+                        title: 'Destino',
+                        value: 'Parqueo',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: MyButton(
+                        text: 'Navegar',
+                        onTap: () => _openNavigationChooser(context),
+                        margin: EdgeInsets.zero,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: AppDims.buttonHeight,
+                        child: OutlinedButton(
+                          onPressed: onGoToReservations,
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppDims.radiusLg,
+                              ),
+                            ),
+                            side: BorderSide(
+                              color: AppColors.headerBottom.withOpacity(0.55),
+                              width: 1.3,
+                            ),
+                            backgroundColor: Colors.white,
+                          ),
+                          child: const MyText(
+                            text: 'Reservaciones',
+                            variant: MyTextVariant.normalBold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _InfoChip extends StatelessWidget {
+class _MiniDetailTile extends StatelessWidget {
   final IconData icon;
-  final String label;
-  const _InfoChip({required this.icon, required this.label});
+  final String title;
+  final String value;
+
+  const _MiniDetailTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F9),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: const Color(0xFF1B3A57), size: 20),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.iconCircle,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: MyText(
-                text: label,
-                variant: MyTextVariant.body,
-                fontSize: 13,
-              ),
+            child: Icon(icon, size: 17, color: AppColors.headerBottom),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MyText(
+                  text: title,
+                  variant: MyTextVariant.bodyMuted,
+                  fontSize: 11,
+                ),
+                const SizedBox(height: 2),
+                MyText(
+                  text: value,
+                  variant: MyTextVariant.bodyBold,
+                  fontSize: 13,
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavAppTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _NavAppTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.borderSoft),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: AppColors.iconCircle,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.headerBottom, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MyText(
+                      text: title,
+                      variant: MyTextVariant.bodyBold,
+                      fontSize: 14,
+                    ),
+                    const SizedBox(height: 2),
+                    MyText(
+                      text: subtitle,
+                      variant: MyTextVariant.bodyMuted,
+                      fontSize: 12,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
         ),
       ),
     );
