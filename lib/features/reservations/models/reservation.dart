@@ -7,14 +7,13 @@ class Reservation {
   final String parkingName;
   final int spaceNumber;
 
-  /// Guardamos reservedAt; la UI puede leer startedAt (alias).
   final DateTime reservedAt;
-
   final DateTime? endedAt;
-  final String state; // "active" | "completed" | "cancelled"
+  final String state; // active | completed | cancelled | cancellation_requested
   final int? pricePerHour;
   final int? amount;
   final int? durationMinutes;
+  final int cancelAttempts;
 
   Reservation({
     required this.id,
@@ -28,6 +27,7 @@ class Reservation {
     this.pricePerHour,
     this.amount,
     this.durationMinutes,
+    this.cancelAttempts = 0,
   });
 
   DateTime get startedAt => reservedAt;
@@ -52,6 +52,7 @@ class Reservation {
       pricePerHour: (data['pricePerHour'] as num?)?.toInt(),
       amount: (data['amount'] as num?)?.toInt(),
       durationMinutes: (data['durationMinutes'] as num?)?.toInt(),
+      cancelAttempts: (data['cancelAttempts'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -60,14 +61,15 @@ class Reservation {
       'userId': userId,
       'parkingId': parkingId,
       'parkingName': parkingName,
-      'spaceId': spaceNumber,
+      'spaceNumber': spaceNumber,
       'reservedAt': Timestamp.fromDate(reservedAt),
-      'startedAt': Timestamp.fromDate(reservedAt), // alias para compatibilidad
+      'startedAt': Timestamp.fromDate(reservedAt),
       'endedAt': endedAt != null ? Timestamp.fromDate(endedAt!) : null,
       'state': state,
       'pricePerHour': pricePerHour,
       'amount': amount,
       'durationMinutes': durationMinutes,
+      'cancelAttempts': cancelAttempts,
     };
   }
 }
