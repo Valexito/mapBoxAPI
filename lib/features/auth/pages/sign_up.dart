@@ -165,7 +165,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                 ),
               ),
               Positioned(
-                top: 56,
+                top: 15,
                 left: 18,
                 child: SafeArea(
                   child: TextButton.icon(
@@ -186,7 +186,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                 ),
               ),
               Positioned(
-                top: screen.height * 0.17,
+                top: screen.height * 0.12,
                 left: 28,
                 right: 28,
                 child: Column(

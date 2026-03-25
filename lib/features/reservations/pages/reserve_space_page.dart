@@ -24,15 +24,26 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
     final g = <String>[];
 
     if (widget.parking.photos.isNotEmpty) {
-      g.addAll(widget.parking.photos.where((e) => e.trim().isNotEmpty));
+      g.addAll(
+        widget.parking.photos
+            .where((e) => e.trim().isNotEmpty)
+            .map((e) => e.trim()),
+      );
     }
 
-    if ((widget.parking.coverUrl ?? '').trim().isNotEmpty) {
-      g.add(widget.parking.coverUrl!.trim());
+    final cover = (widget.parking.coverUrl ?? '').trim();
+    final image = (widget.parking.imageUrl ?? '').trim();
+
+    if (g.isEmpty && cover.isNotEmpty) {
+      g.add(cover);
     }
 
-    if ((widget.parking.imageUrl ?? '').trim().isNotEmpty) {
-      g.add(widget.parking.imageUrl!.trim());
+    if (g.isEmpty && image.isNotEmpty) {
+      g.add(image);
+    }
+
+    if (g.isEmpty) {
+      g.add('https://via.placeholder.com/800x400?text=Parking');
     }
 
     return g.toSet().toList();
@@ -78,6 +89,7 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
+
     final cross =
         w >= 520
             ? 5
@@ -90,6 +102,7 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
     return Scaffold(
       backgroundColor: AppColors.pageBg,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _ReservationHeader(
@@ -98,7 +111,7 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
             ),
             Expanded(
               child: Transform.translate(
-                offset: const Offset(0, -26),
+                offset: const Offset(0, -18),
                 child: Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
@@ -110,110 +123,100 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                   ),
                   child: Column(
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const MyText(
+                              text: 'Reservar espacio',
+                              variant: MyTextVariant.title,
+                              customColor: AppColors.headerBottom,
+                              fontSize: 22,
+                            ),
+                            const SizedBox(height: 6),
+                            const MyText(
+                              text:
+                                  'Selecciona un espacio disponible para continuar con tu reserva.',
+                              variant: MyTextVariant.bodyMuted,
+                              fontSize: 13,
+                            ),
+                            const SizedBox(height: 18),
+                            _InfoChipsRow(parking: widget.parking),
+                          ],
+                        ),
+                      ),
                       Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(20, 22, 20, 140),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const MyText(
-                                text: 'Reservar espacio',
-                                variant: MyTextVariant.title,
-                                customColor: AppColors.headerBottom,
-                                fontSize: 22,
-                              ),
-                              const SizedBox(height: 6),
-                              const MyText(
-                                text:
-                                    'Selecciona un espacio disponible para continuar con tu reserva.',
-                                variant: MyTextVariant.bodyMuted,
-                                fontSize: 13,
-                              ),
-                              const SizedBox(height: 18),
-
-                              _InfoChipsRow(parking: widget.parking),
-
-                              const SizedBox(height: 18),
-
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.headerBottom.withOpacity(
-                                        0.08,
-                                      ),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.headerBottom.withOpacity(
+                                    0.08,
+                                  ),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const MyText(
+                                  text: 'Disponibilidad',
+                                  variant: MyTextVariant.normalBold,
+                                  fontSize: 15,
+                                ),
+                                const SizedBox(height: 10),
+                                const Wrap(
+                                  spacing: 14,
+                                  runSpacing: 10,
+                                  children: [
+                                    _LegendDot(
+                                      color: Color(0xFF16A34A),
+                                      label: 'Libre',
+                                    ),
+                                    _LegendDot(
+                                      color: Color(0xFFCBD5E1),
+                                      label: 'Ocupado',
+                                    ),
+                                    _LegendDot(
+                                      color: AppColors.headerBottom,
+                                      label: 'Seleccionado',
+                                      filled: true,
                                     ),
                                   ],
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const MyText(
-                                      text: 'Disponibilidad',
-                                      variant: MyTextVariant.normalBold,
-                                      fontSize: 15,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    const Wrap(
-                                      spacing: 14,
-                                      runSpacing: 10,
-                                      children: [
-                                        _LegendDot(
-                                          color: Color(0xFF16A34A),
-                                          label: 'Libre',
+                                const SizedBox(height: 16),
+                                Expanded(
+                                  child: spacesAsync.when(
+                                    loading:
+                                        () => const Center(
+                                          child: CircularProgressIndicator(),
                                         ),
-                                        _LegendDot(
-                                          color: Color(0xFFCBD5E1),
-                                          label: 'Ocupado',
-                                        ),
-                                        _LegendDot(
-                                          color: AppColors.headerBottom,
-                                          label: 'Seleccionado',
-                                          filled: true,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    spacesAsync.when(
-                                      loading:
-                                          () => const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 28,
-                                            ),
-                                            child: Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
+                                    error:
+                                        (e, _) => Center(
+                                          child: MyText(
+                                            text: 'Error cargando espacios: $e',
+                                            variant: MyTextVariant.bodyMuted,
+                                            textAlign: TextAlign.center,
                                           ),
-                                      error:
-                                          (e, _) => Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 24,
-                                            ),
-                                            child: Center(
-                                              child: MyText(
-                                                text:
-                                                    'Error cargando espacios: $e',
-                                                variant:
-                                                    MyTextVariant.bodyMuted,
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ),
-                                          ),
-                                      data: (spacesMap) {
-                                        final total =
-                                            widget.parking.spaces > 0
-                                                ? widget.parking.spaces
-                                                : (spacesMap.isNotEmpty
-                                                    ? spacesMap.length
-                                                    : 20);
+                                        ),
+                                    data: (spacesMap) {
+                                      final total =
+                                          widget.parking.spaces > 0
+                                              ? widget.parking.spaces
+                                              : (spacesMap.isNotEmpty
+                                                  ? spacesMap.length
+                                                  : 20);
 
-                                        return GridView.builder(
+                                      return SingleChildScrollView(
+                                        child: GridView.builder(
                                           shrinkWrap: true,
                                           physics:
                                               const NeverScrollableScrollPhysics(),
@@ -238,11 +241,9 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                                               WidgetsBinding.instance
                                                   .addPostFrameCallback((_) {
                                                     if (mounted) {
-                                                      setState(
-                                                        () =>
-                                                            selectedSpace =
-                                                                null,
-                                                      );
+                                                      setState(() {
+                                                        selectedSpace = null;
+                                                      });
                                                     }
                                                   });
                                             }
@@ -254,23 +255,22 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                                               onTap:
                                                   occupied
                                                       ? null
-                                                      : () => setState(
-                                                        () =>
-                                                            selected
-                                                                ? selectedSpace =
-                                                                    null
-                                                                : selectedSpace =
-                                                                    num,
-                                                      ),
+                                                      : () => setState(() {
+                                                        selected
+                                                            ? selectedSpace =
+                                                                null
+                                                            : selectedSpace =
+                                                                num;
+                                                      }),
                                             );
                                           },
-                                        );
-                                      },
-                                    ),
-                                  ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -367,7 +367,7 @@ class _ReservationHeaderState extends State<_ReservationHeader> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(viewportFraction: 1);
   }
 
   @override
@@ -381,7 +381,7 @@ class _ReservationHeaderState extends State<_ReservationHeader> {
     final hasGallery = widget.gallery.isNotEmpty;
 
     return SizedBox(
-      height: 280,
+      height: 260,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -395,40 +395,12 @@ class _ReservationHeaderState extends State<_ReservationHeader> {
                 return Image.network(
                   widget.gallery[i],
                   fit: BoxFit.cover,
-                  errorBuilder:
-                      (_, __, ___) => Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.headerTop,
-                              AppColors.headerBottom,
-                            ],
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.local_parking_rounded,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                      ),
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (_, __, ___) => const _ImageFallback(),
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [AppColors.headerTop, AppColors.headerBottom],
-                        ),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ),
-                    );
+                    return const _ImageShimmer();
                   },
                 );
               },
@@ -443,44 +415,52 @@ class _ReservationHeaderState extends State<_ReservationHeader> {
                 ),
               ),
             ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.10),
-                  Colors.black.withOpacity(0.22),
-                ],
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.08),
+                      Colors.black.withOpacity(0.18),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
           Positioned(
-            top: 40,
+            top: 38,
             left: -20,
-            child: Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                shape: BoxShape.circle,
+            child: IgnorePointer(
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
           Positioned(
             top: -10,
             right: -10,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                shape: BoxShape.circle,
+            child: IgnorePointer(
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
           Positioned(
-            top: 15,
+            top: 12,
             left: 18,
             child: SafeArea(
               child: TextButton.icon(
@@ -501,42 +481,46 @@ class _ReservationHeaderState extends State<_ReservationHeader> {
             Positioned(
               top: 18,
               right: 18,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.28),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${_page + 1}/${widget.gallery.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.28),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_page + 1}/${widget.gallery.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
             ),
           if (widget.gallery.length > 1)
             Positioned(
-              bottom: 14,
+              bottom: 18,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  widget.gallery.length,
-                  (i) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    height: 7,
-                    width: _page == i ? 18 : 7,
-                    decoration: BoxDecoration(
-                      color: _page == i ? Colors.white : Colors.white70,
-                      borderRadius: BorderRadius.circular(10),
+              child: IgnorePointer(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    widget.gallery.length,
+                    (i) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      height: 7,
+                      width: _page == i ? 18 : 7,
+                      decoration: BoxDecoration(
+                        color: _page == i ? Colors.white : Colors.white70,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
@@ -720,6 +704,46 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         MyText(text: label, variant: MyTextVariant.body, fontSize: 12),
       ],
+    );
+  }
+}
+
+class _ImageShimmer extends StatelessWidget {
+  const _ImageShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFE9EDF3),
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+}
+
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.headerTop, AppColors.headerBottom],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.image_not_supported,
+        size: 40,
+        color: Colors.white,
+      ),
     );
   }
 }

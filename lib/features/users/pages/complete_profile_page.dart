@@ -367,7 +367,7 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                   ),
                 ),
                 Positioned(
-                  top: 56,
+                  top: 15,
                   left: 18,
                   child: SafeArea(
                     child: TextButton.icon(
@@ -394,7 +394,7 @@ class _CompleteProfilePageState extends ConsumerState<CompleteProfilePage> {
                   ),
                 ),
                 Positioned(
-                  top: screen.height * 0.17,
+                  top: screen.height * 0.12,
                   left: 28,
                   right: 28,
                   child: Column(
