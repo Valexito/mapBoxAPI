@@ -11,6 +11,7 @@ import 'package:mapbox_api/features/reservations/providers/reservations_provider
 
 class ReserveSpacePage extends ConsumerStatefulWidget {
   final Parking parking;
+
   const ReserveSpacePage({super.key, required this.parking});
 
   @override
@@ -19,6 +20,7 @@ class ReserveSpacePage extends ConsumerStatefulWidget {
 
 class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
   int? selectedSpace;
+  bool _isSubmitting = false;
 
   List<String> get _gallery {
     final g = <String>[];
@@ -50,38 +52,48 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
   }
 
   Future<void> _confirmReservation() async {
-    if (selectedSpace == null) return;
+    if (selectedSpace == null || _isSubmitting) return;
+
+    final chosenSpace = selectedSpace!;
 
     final ok = await ConfirmReservationDialog.show(
       context,
       destination: LatLng(widget.parking.lat, widget.parking.lng),
       parkingName: widget.parking.name,
-      spaceNumber: selectedSpace!,
+      spaceNumber: chosenSpace,
     );
 
-    if (ok == true && selectedSpace != null) {
-      try {
-        final reserve = ref.read(reserveSpaceProvider);
-        final reservationId = await reserve(
-          parkingId: widget.parking.id,
-          parkingName: widget.parking.name,
-          spaceNumber: selectedSpace!,
-        );
+    if (ok != true || !mounted) return;
 
-        if (!mounted) return;
-        Navigator.of(context).pushNamed(
-          '/routeView',
-          arguments: {
-            'destination': LatLng(widget.parking.lat, widget.parking.lng),
-            'parkingName': widget.parking.name,
-            'reservationId': reservationId,
-          },
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('No se pudo reservar: $e')));
+    setState(() => _isSubmitting = true);
+
+    try {
+      final reserve = ref.read(reserveSpaceProvider);
+      final reservationId = await reserve(
+        parkingId: widget.parking.id,
+        parkingName: widget.parking.name,
+        spaceNumber: chosenSpace,
+      );
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushNamed(
+        '/routeView',
+        arguments: {
+          'destination': LatLng(widget.parking.lat, widget.parking.lng),
+          'parkingName': widget.parking.name,
+          'reservationId': reservationId,
+          'spaceNumber': chosenSpace,
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo reservar: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -253,7 +265,7 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                                               occupied: occupied,
                                               selected: selected,
                                               onTap:
-                                                  occupied
+                                                  occupied || _isSubmitting
                                                       ? null
                                                       : () => setState(() {
                                                         selected
@@ -327,9 +339,12 @@ class _ReserveSpacePageState extends ConsumerState<ReserveSpacePage> {
                               ),
                               const SizedBox(height: 14),
                               MyButton(
-                                text: 'Confirmar reserva',
+                                text:
+                                    _isSubmitting
+                                        ? 'Reservando...'
+                                        : 'Confirmar reserva',
                                 onTap:
-                                    selectedSpace != null
+                                    selectedSpace != null && !_isSubmitting
                                         ? _confirmReservation
                                         : null,
                                 margin: EdgeInsets.zero,
@@ -534,6 +549,7 @@ class _ReservationHeaderState extends State<_ReservationHeader> {
 
 class _InfoChipsRow extends StatelessWidget {
   final Parking parking;
+
   const _InfoChipsRow({required this.parking});
 
   @override

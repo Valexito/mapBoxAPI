@@ -6,21 +6,18 @@ class Parking {
   final double lng;
   final String name;
   final String ownerID;
-  final int price; // legacy: por noche (si lo usas en UI, se mantiene)
+  final int price;
   final int spaces;
   final double? rating;
   final double? originalPrice;
-  final String? imageUrl; // legacy
-  final String? localImagePath; // assets
+  final String? imageUrl;
+  final String? localImagePath;
   final String? descripcion;
-  // nuevos
-  final String? coverUrl; // portada
-  final List<String> photos; // galería
-
-  /// NUEVO: precio por hora que usaremos para reservas y cobro
+  final String? coverUrl;
+  final List<String> photos;
   final int pricePerHour;
 
-  Parking({
+  const Parking({
     required this.id,
     required this.lat,
     required this.lng,
@@ -35,77 +32,57 @@ class Parking {
     this.descripcion,
     this.coverUrl,
     this.photos = const [],
-    this.pricePerHour = 0, // default seguro
+    this.pricePerHour = 0,
   });
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse('$value') ?? 0.0;
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse('$value') ?? 0;
+  }
+
+  static List<String> _toStringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((e) => e?.toString().trim() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return const <String>[];
+  }
 
   factory Parking.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
-    double _d(dynamic v) =>
-        (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
-    List<String> _ls(dynamic v) =>
-        (v is List)
-            ? v
-                .map((e) => e?.toString() ?? '')
-                .where((e) => e.isNotEmpty)
-                .toList()
-            : const <String>[];
-
-    return Parking(
-      id: doc.id,
-      lat: _d(data['lat']),
-      lng: _d(data['lng']),
-      name: data['name'] ?? '',
-      ownerID: data['ownerID'] ?? '',
-      price: (data['price'] ?? 0) as int,
-      spaces: (data['spaces'] ?? 0) as int,
-      rating:
-          (data['rating'] is num) ? (data['rating'] as num).toDouble() : null,
-      originalPrice:
-          (data['originalPrice'] is num)
-              ? (data['originalPrice'] as num).toDouble()
-              : null,
-      imageUrl: data['imageUrl'],
-      localImagePath: data['localImagePath'],
-      descripcion: data['descripcion'],
-      coverUrl: data['coverUrl'],
-      photos: _ls(data['photos']),
-      pricePerHour:
-          (data['pricePerHour'] ?? data['price'] ?? 0) as int, // fallback
-    );
+    return Parking.fromMap(data, id: doc.id);
   }
 
   factory Parking.fromMap(Map<String, dynamic> data, {required String id}) {
-    double _d(dynamic v) =>
-        (v is num) ? v.toDouble() : double.tryParse('$v') ?? 0.0;
-    List<String> _ls(dynamic v) =>
-        (v is List)
-            ? v
-                .map((e) => e?.toString() ?? '')
-                .where((e) => e.isNotEmpty)
-                .toList()
-            : const <String>[];
+    final parsedPrice = _toInt(data['price']);
+    final parsedPricePerHour = _toInt(data['pricePerHour']);
 
     return Parking(
       id: id,
-      lat: _d(data['lat']),
-      lng: _d(data['lng']),
-      name: data['name'] ?? '',
-      ownerID: data['ownerID'] ?? '',
-      price: (data['price'] ?? 0) as int,
-      spaces: (data['spaces'] ?? 0) as int,
-      rating:
-          (data['rating'] is num) ? (data['rating'] as num).toDouble() : null,
+      lat: _toDouble(data['lat']),
+      lng: _toDouble(data['lng']),
+      name: (data['name'] as String?) ?? '',
+      ownerID: (data['ownerID'] as String?) ?? '',
+      price: parsedPrice,
+      spaces: _toInt(data['spaces']),
+      rating: data['rating'] is num ? (data['rating'] as num).toDouble() : null,
       originalPrice:
-          (data['originalPrice'] is num)
+          data['originalPrice'] is num
               ? (data['originalPrice'] as num).toDouble()
               : null,
-      imageUrl: data['imageUrl'],
-      localImagePath: data['localImagePath'],
-      descripcion: data['descripcion'],
-      coverUrl: data['coverUrl'],
-      photos: _ls(data['photos']),
-      pricePerHour:
-          (data['pricePerHour'] ?? data['price'] ?? 0) as int, // fallback
+      imageUrl: data['imageUrl'] as String?,
+      localImagePath: data['localImagePath'] as String?,
+      descripcion: data['descripcion'] as String?,
+      coverUrl: data['coverUrl'] as String?,
+      photos: _toStringList(data['photos']),
+      pricePerHour: parsedPricePerHour > 0 ? parsedPricePerHour : parsedPrice,
     );
   }
 
@@ -125,4 +102,40 @@ class Parking {
     'photos': photos,
     'pricePerHour': pricePerHour,
   };
+
+  Parking copyWith({
+    String? id,
+    double? lat,
+    double? lng,
+    String? name,
+    String? ownerID,
+    int? price,
+    int? spaces,
+    double? rating,
+    double? originalPrice,
+    String? imageUrl,
+    String? localImagePath,
+    String? descripcion,
+    String? coverUrl,
+    List<String>? photos,
+    int? pricePerHour,
+  }) {
+    return Parking(
+      id: id ?? this.id,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      name: name ?? this.name,
+      ownerID: ownerID ?? this.ownerID,
+      price: price ?? this.price,
+      spaces: spaces ?? this.spaces,
+      rating: rating ?? this.rating,
+      originalPrice: originalPrice ?? this.originalPrice,
+      imageUrl: imageUrl ?? this.imageUrl,
+      localImagePath: localImagePath ?? this.localImagePath,
+      descripcion: descripcion ?? this.descripcion,
+      coverUrl: coverUrl ?? this.coverUrl,
+      photos: photos ?? this.photos,
+      pricePerHour: pricePerHour ?? this.pricePerHour,
+    );
+  }
 }

@@ -86,7 +86,6 @@ class ConfirmReservationDialog {
                     ],
                   ),
                 ),
-
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                   child: Column(
@@ -136,9 +135,7 @@ class ConfirmReservationDialog {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 18),
-
                       Row(
                         children: [
                           Expanded(

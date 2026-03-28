@@ -121,9 +121,15 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage>
                     String norm(String? s) => (s ?? '').toLowerCase().trim();
 
                     final active =
-                        all.where((r) => norm(r.state) == 'active').toList();
+                        all.where((r) {
+                          final state = norm(r.state);
+                          return state == 'active' ||
+                              state == 'cancellation_requested';
+                        }).toList();
+
                     final completed =
                         all.where((r) => norm(r.state) == 'completed').toList();
+
                     final cancelled =
                         all.where((r) => norm(r.state) == 'cancelled').toList();
 
@@ -228,7 +234,8 @@ class _EmptyReservationsState extends StatelessWidget {
     switch (stateLabel) {
       case 'active':
         title = 'No hay reservaciones activas';
-        subtitle = 'Tus reservaciones en curso aparecerán aquí.';
+        subtitle =
+            'Tus reservaciones activas o pendientes de salida aparecerán aquí.';
         icon = Icons.local_parking_outlined;
         break;
       case 'completed':
